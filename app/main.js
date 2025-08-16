@@ -1,5 +1,5 @@
-import net from "net";
-import { rParser } from "./parser";
+const net = require("net");
+const { rParser } = require("./parser");
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 console.log("Logs from your program will appear here!");

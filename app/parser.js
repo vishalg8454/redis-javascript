@@ -6,7 +6,7 @@ export const rParser = (str) => {
   let n = str.length;
   let arr = [];
   for (let i = 0; i < n; i++) {
-    if (str[i] === "*") {
+    if (str[i] === "*") {p
       //array
       let numElements = "";
       while (isNumChar(str[i + 1])) {
