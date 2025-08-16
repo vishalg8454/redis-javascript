@@ -30,11 +30,12 @@ const rParser = (str) => {
     }
     if (str[i] === ":") {
       //number
-      let number = "";
+      let numberString = "";
       while (isNumChar(str[i + 1])) {
-        number += str[i + 1];
+        numberString += str[i + 1];
         i++;
       }
+      const number = Number(numberString);
       arr.push(number);
     }
   }
