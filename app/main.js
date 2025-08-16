@@ -44,10 +44,10 @@ const server = net.createServer((connection) => {
     const arr = rParser(str);
     console.log("parsed array", arr);
     for (let i = 0; i < arr.length; i++) {
-      if (arr[i].toLocaleUpperCase === "PING") {
+      if (arr[i].toLocaleUpperCase() === "PING") {
         connection.write("+PONG\r\n");
       }
-      if (arr[i].toLocaleUpperCase === "ECHO") {
+      if (arr[i].toLocaleUpperCase() === "ECHO") {
         const echoString = `+${arr[i + 1]}\r\n`;
         console.log("echoing", echoString);
         connection.write(echoString);
