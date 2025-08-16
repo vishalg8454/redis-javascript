@@ -1,4 +1,4 @@
-const isNumChar = (char) => char >= 0 && char <= 9;
+const isNumChar = (char) => char >= "0" && char <= "9";
 const isChar = (char) =>
   (char >= "a" && char <= "z") || (char >= "A" && char <= "Z");
 
