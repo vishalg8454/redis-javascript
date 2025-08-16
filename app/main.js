@@ -22,7 +22,7 @@ const server = net.createServer((connection) => {
       if (arr[i].toLocaleUpperCase() === "GET") {
         const key = arr[i + 1];
         const result = map.get(key);
-        const resultString = `${result.length}\r\n${result}\r\n`;
+        const resultString = `$${result.length}\r\n${result}\r\n`;
         connection.write(resultString);
       }
       if (arr[i].toLocaleUpperCase() === "SET") {
