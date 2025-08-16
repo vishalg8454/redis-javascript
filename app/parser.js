@@ -32,4 +32,4 @@ const rParser = (str) => {
   return arr;
 };
 
-export default rParser;
+module.exports = { rParser };
