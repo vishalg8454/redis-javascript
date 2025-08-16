@@ -13,6 +13,7 @@ const rParser = (str) => {
         numElements += str[i + 1];
         i++;
       }
+      i+=2;//escaping \r\n
     }
     if (str[i] === "$") {
       //string
@@ -21,6 +22,7 @@ const rParser = (str) => {
         stringLength += str[i + 1];
         i++;
       }
+      i+=2;//escaping \r\n
       let localString = "";
       let localStringLen = Number(stringLength);
       console.log(2, localStringLen);
@@ -36,6 +38,7 @@ const rParser = (str) => {
         numberString += str[i + 1];
         i++;
       }
+      i+=2;//escaping \r\n
       const number = Number(numberString);
       console.log(3, numberString);
       arr.push(number);
