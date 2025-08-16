@@ -2,11 +2,11 @@ const isNumChar = (char) => char >= 0 && char <= 9;
 const isChar = (char) =>
   (char >= "a" && char <= "z") || (char >= "A" && char <= "Z");
 
-export const rParser = (str) => {
+const rParser = (str) => {
   let n = str.length;
   let arr = [];
   for (let i = 0; i < n; i++) {
-    if (str[i] === "*") {p
+    if (str[i] === "*") {
       //array
       let numElements = "";
       while (isNumChar(str[i + 1])) {
@@ -31,3 +31,5 @@ export const rParser = (str) => {
   }
   return arr;
 };
+
+export default rParser;
