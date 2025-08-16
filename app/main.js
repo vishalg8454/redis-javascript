@@ -7,7 +7,7 @@ console.log("Logs from your program will appear here!");
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
     connection.write("+PONG\r\n");
-    console.log("Received data:", data.toString());
+    console.log("Received raw data:", data);
   });
 });
 
