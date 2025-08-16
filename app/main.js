@@ -9,6 +9,7 @@ const map = new Map();
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
     const str = data.toString();
+    console.log("raw string", str);
     const arr = rParser(str);
     console.log("parsed array", arr);
     for (let i = 0; i < arr.length; i++) {
