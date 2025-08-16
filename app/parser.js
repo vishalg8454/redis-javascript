@@ -1,4 +1,4 @@
-const isNumChar = (char) => char >= "0" && char <= "9";
+const isNumChar = (char) => char >= 0 && char <= 9;
 const isChar = (char) =>
   (char >= "a" && char <= "z") || (char >= "A" && char <= "Z");
 
@@ -23,6 +23,7 @@ const rParser = (str) => {
       }
       let localString = "";
       let localStringLen = Number(stringLength);
+      console.log(2, localStringLen);
       for (let j = 0; j < localStringLen; j++, i++) {
         localString += str[i + 1];
       }
@@ -36,6 +37,7 @@ const rParser = (str) => {
         i++;
       }
       const number = Number(numberString);
+      console.log(3, numberString);
       arr.push(number);
     }
   }
