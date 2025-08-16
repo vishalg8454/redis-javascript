@@ -35,7 +35,7 @@ const server = net.createServer((connection) => {
         const key = arr[i + 1];
         const value = arr[i + 2];
         const expiryPresent = arr[i + 3].toLocaleUpperCase === "PX";
-        const expiryTime = arr[i + 4];
+        const expiryTime = Number(arr[i + 4]);
         map.set(key, {
           value,
           expiry: expiryPresent ? Date.now() + expiryTime : Infinity,
