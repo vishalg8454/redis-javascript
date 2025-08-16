@@ -22,11 +22,12 @@ const server = net.createServer((connection) => {
       if (arr[i].toLocaleUpperCase() === "GET") {
         const key = arr[i + 1];
         const result = map.get(key);
+        const value = result.value;
         const expiryTime = result.expiry;
         const expired = Date.now() > expiryTime;
         const resultString = expired
           ? `$-1\r\n`
-          : `$${result.length}\r\n${result}\r\n`;
+          : `$${value.length}\r\n${value}\r\n`;
         connection.write(resultString);
       }
       if (arr[i].toLocaleUpperCase() === "SET") {
