@@ -48,7 +48,9 @@ const server = net.createServer((connection) => {
         connection.write("+PONG\r\n");
       }
       if (arr[i].toLocaleLowerCase === "ECHO") {
-        connection.write(`+${arr[i + 1]}\r\n`);
+        const echoString = `+${arr[i + 1]}\r\n`;
+        console.log("echoing", echoString);
+        connection.write(echoString);
       }
     }
   });
