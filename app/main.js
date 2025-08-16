@@ -22,13 +22,23 @@ const server = net.createServer((connection) => {
       if (arr[i].toLocaleUpperCase() === "GET") {
         const key = arr[i + 1];
         const result = map.get(key);
-        const resultString = `$${result.length}\r\n${result}\r\n`;
+        const expiryTime = result.expiry;
+        const expired = Date.now() > expiryTime;
+        const resultString = expired
+          ? `$-1\r\n`
+          : `$${result.length}\r\n${result}\r\n`;
         connection.write(resultString);
       }
       if (arr[i].toLocaleUpperCase() === "SET") {
         const key = arr[i + 1];
         const value = arr[i + 2];
-        map.set(key, value);
+        const expiryPresent = arr[i + 3].toLocaleUpperCase === "PX";
+        const expiryTime = arr[i + 4];
+        map.set(key, {
+          value,
+          expiry: expiryPresent ? Date.now() + expiryTime : Infinity,
+        });
+
         connection.write("+OK\r\n");
       }
     }

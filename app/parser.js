@@ -28,6 +28,15 @@ const rParser = (str) => {
       }
       arr.push(localString);
     }
+    if (str[i] === ":") {
+      //number
+      let number = "";
+      while (isNumChar(str[i + 1])) {
+        number += str[i + 1];
+        i++;
+      }
+      arr.push(number);
+    }
   }
   return arr;
 };
