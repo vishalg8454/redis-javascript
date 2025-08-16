@@ -25,7 +25,6 @@ const rParser = (str) => {
       i+=2;//escaping \r\n
       let localString = "";
       let localStringLen = Number(stringLength);
-      console.log(2, localStringLen);
       for (let j = 0; j < localStringLen; j++, i++) {
         localString += str[i + 1];
       }
@@ -40,7 +39,6 @@ const rParser = (str) => {
       }
       i+=2;//escaping \r\n
       const number = Number(numberString);
-      console.log(3, numberString);
       arr.push(number);
     }
   }

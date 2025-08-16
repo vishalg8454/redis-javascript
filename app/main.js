@@ -9,7 +9,6 @@ const map = new Map();
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
     const str = data.toString();
-    console.log("raw string", str);
     const arr = rParser(str);
     console.log("parsed array", arr);
     for (let i = 0; i < arr.length; i++) {
@@ -29,6 +28,7 @@ const server = net.createServer((connection) => {
         const resultString = expired
           ? `$-1\r\n`
           : `$${value.length}\r\n${value}\r\n`;
+        console.log("map", map);
         connection.write(resultString);
       }
       if (arr[i].toLocaleUpperCase() === "SET") {
