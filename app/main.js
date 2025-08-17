@@ -92,6 +92,24 @@ const server = net.createServer((connection) => {
         let responseString = `:${arrLength}\r\n`;
         connection.write(responseString);
       }
+      if (arr[i].toLocaleUpperCase() === "LPOP") {
+        const listKey = arr[i + 1];
+        const arrayExists = map.get(listKey);
+        if (!arrayExists) {
+          connection.write(`$-1\r\n`);
+        }
+        const existingArray = map.get(listKey).value;
+        if (!existingArray.length) {
+          connection.write(`$-1\r\n`);
+        }
+        const elementToBeRemoved = existingArray[0];
+        map.set(listKey, {
+          value: existingArray.slice(1),
+          expiry: Infinity,
+        });
+        let responseString = `$${elementToBeRemoved.length}\r\n${elementToBeRemoved}`;
+        connection.write(responseString)
+      }
     }
   });
 });
