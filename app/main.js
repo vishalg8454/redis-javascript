@@ -68,7 +68,7 @@ const server = net.createServer((connection) => {
         const arrayElements = map
           .get(listKey)
           .value.slice(startIndex, endIndex + 1);
-        const responseString = `*${arrayElements.length}\r\n`;
+        let responseString = `*${arrayElements.length}\r\n`;
         arrayElements.forEach((element) => {
           responseString += `$${element.length}\r\n${element}\r\n`;
         });
