@@ -139,7 +139,7 @@ const server = net.createServer((connection) => {
         const listKey = arr[i + 1];
         const timeout = Number(arr[i + 2]);
 
-        const existingArray = map.get(listKey)?.value;
+        const existingArray = map.get(listKey)?.value || [];
         if (existingArray.length > 0) {
           //we have an element ready
           const elementToBeRemoved = existingArray[0];
