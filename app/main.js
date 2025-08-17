@@ -68,6 +68,8 @@ const server = net.createServer((connection) => {
         const arrLength = map.get(listKey).value.length;
         startIndex = startIndex < 0 ? arrLength + startIndex : startIndex;
         endIndex = endIndex < 0 ? arrLength + endIndex : endIndex;
+        startIndex = startIndex < 0 ? 0 : startIndex;
+        endIndex = endIndex < 0 ? 0 : endIndex;
         const arrayElements = map
           .get(listKey)
           .value.slice(startIndex, endIndex + 1);
