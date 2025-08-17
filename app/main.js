@@ -43,6 +43,19 @@ const server = net.createServer((connection) => {
 
         connection.write("+OK\r\n");
       }
+      if (arr[i].toLocaleUpperCase() === "RPUSH") {
+        const listName = arr[i + 1];
+        const listElements = slice(arr.slice(i + 2));
+        const arrayExists = map.get(listElements);
+        map.set(listName, {
+          value: arrayExists
+            ? [...arrayExists, ...listElements]
+            : [listElements],
+          expiry: Infinity,
+        });
+
+        connection.write(`:${map.get(listName).value.length}\r\n`)
+      }
     }
   });
 });
