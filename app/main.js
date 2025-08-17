@@ -44,18 +44,35 @@ const server = net.createServer((connection) => {
         connection.write("+OK\r\n");
       }
       if (arr[i].toLocaleUpperCase() === "RPUSH") {
-        const listName = arr[i + 1];
+        const listKey = arr[i + 1];
         const newListElements = arr.slice(i + 2);
-        const arrayExists = map.get(listName);
-        const existingValue = map.get(listName)?.value;
-        map.set(listName, {
+        const arrayExists = map.get(listKey);
+        const existingValue = map.get(listKey)?.value;
+        map.set(listKey, {
           value: arrayExists
             ? [...existingValue, ...newListElements]
             : [...newListElements],
           expiry: Infinity,
         });
 
-        connection.write(`:${map.get(listName).value.length}\r\n`);
+        connection.write(`:${map.get(listKey).value.length}\r\n`);
+      }
+      if (arr[i].toLocaleUpperCase() === "LRANGE") {
+        const listKey = arr[i + 1];
+        const startIndex = Number(arr[i + 2]);
+        const endIndex = Number(arr[i + 3]);
+        const arrayExists = map.get(listKey);
+        if (!arrayExists) {
+          connection.write(`*0\r\n`);
+        }
+        const arrayElements = map
+          .get(listKey)
+          .value.slice(startIndex, endIndex + 1);
+        const responseString = `*${arrayElements.length}\r\n`;
+        arrayElements.forEach((element) => {
+          responseString += `$${element.length}\r\n${element}\r\n`;
+        });
+        connection.write(responseString);
       }
     }
   });
