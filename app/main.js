@@ -51,7 +51,7 @@ const server = net.createServer((connection) => {
         map.set(listName, {
           value: arrayExists
             ? [...existingValue, ...newListElements]
-            : [newListElements],
+            : [...newListElements],
           expiry: Infinity,
         });
 
