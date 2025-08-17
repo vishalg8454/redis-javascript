@@ -119,6 +119,7 @@ const server = net.createServer((connection) => {
             responseString += `$${element.length}\r\n${element}\r\n`;
           });
         }
+        console.log("LPOP response:", responseString);
         connection.write(responseString);
       }
     }
