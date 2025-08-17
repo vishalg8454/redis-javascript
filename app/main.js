@@ -103,6 +103,8 @@ const server = net.createServer((connection) => {
         if (!existingArray.length) {
           connection.write(`$-1\r\n`);
         }
+        console.log("existingArray", existingArray);
+        console.log("countToRemove", countToRemove);
         const elementsToBeRemoved = existingArray.slice(0, countToRemove);
         map.set(listKey, {
           value: existingArray.slice(countToRemove),
