@@ -70,7 +70,7 @@ const server = net.createServer((connection) => {
               : [...existingValue, ...newListElements]
             : [...newListElements],
           expiry: Infinity,
-        });        
+        });
         connection.write(`:${map.get(listKey).value.length}\r\n`);
         checkWaitlist(listKey);
       }
@@ -161,7 +161,10 @@ const server = net.createServer((connection) => {
             value: existingArray.slice(1),
             expiry: Infinity,
           });
-          const responseString = `$${elementToBeRemoved.length}\r\n${elementToBeRemoved}\r\n`;
+          let responseString = "";
+          responseString += `*2\r\n`;
+          responseString += `$${listKey.length}\r\n${listKey}\r\n`;
+          responseString += `$${elementToBeRemoved.length}\r\n${elementToBeRemoved}\r\n`;
           connection.write(responseString);
         });
       }
