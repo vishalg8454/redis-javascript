@@ -47,9 +47,10 @@ const server = net.createServer((connection) => {
         const listName = arr[i + 1];
         const listElements = arr.slice(i + 2);
         const arrayExists = map.get(listElements);
+        const existingValue = map.get(listElements).value;
         map.set(listName, {
           value: arrayExists
-            ? [...arrayExists, ...listElements]
+            ? [...existingValue, ...listElements]
             : [listElements],
           expiry: Infinity,
         });
