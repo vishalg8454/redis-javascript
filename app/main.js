@@ -112,12 +112,14 @@ const server = net.createServer((connection) => {
         if (elementsToBeRemoved === 1) {
           //return string
           responseString += `$${elementsToBeRemoved[0].length}\r\n${elementsToBeRemoved[0]}\r\n`;
+          console.log("1", responseString);
         } else {
           //return array
           responseString += `*${elementsToBeRemoved.length}\r\n`;
           elementsToBeRemoved.forEach((element) => {
             responseString += `$${element.length}\r\n${element}\r\n`;
           });
+          console.log("2", responseString);
         }
         connection.write(responseString);
       }
