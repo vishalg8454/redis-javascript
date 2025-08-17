@@ -59,12 +59,15 @@ const server = net.createServer((connection) => {
       }
       if (arr[i].toLocaleUpperCase() === "LRANGE") {
         const listKey = arr[i + 1];
-        const startIndex = Number(arr[i + 2]);
-        const endIndex = Number(arr[i + 3]);
+        let startIndex = Number(arr[i + 2]);
+        let endIndex = Number(arr[i + 3]);
         const arrayExists = map.get(listKey);
         if (!arrayExists) {
           connection.write(`*0\r\n`);
         }
+        const arrLength = map.get(listKey).value.length;
+        startIndex = startIndex < 0 ? arrLength + startIndex : startIndex;
+        endIndex = endIndex < 0 ? arrLength + endIndex : endIndex;
         const arrayElements = map
           .get(listKey)
           .value.slice(startIndex, endIndex + 1);
