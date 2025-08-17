@@ -89,7 +89,7 @@ const server = net.createServer((connection) => {
           connection.write(`*0\r\n`);
         }
         const arrLength = map.get(listKey).value.length;
-        let responseString = `*${arrLength}\r\n`;
+        let responseString = `$${arrLength}\r\n`;
         connection.write(responseString);
       }
     }
