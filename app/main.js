@@ -82,6 +82,16 @@ const server = net.createServer((connection) => {
         });
         connection.write(responseString);
       }
+      if (arr[i].toLocaleUpperCase() === "LLEN") {
+        const listKey = arr[i + 1];
+        const arrayExists = map.get(listKey);
+        if (!arrayExists) {
+          connection.write(`*0\r\n`);
+        }
+        const arrLength = map.get(listKey).value.length;
+        let responseString = `*${arrLength.length}\r\n`;
+        connection.write(responseString);
+      }
     }
   });
 });
