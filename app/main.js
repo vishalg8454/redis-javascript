@@ -45,17 +45,17 @@ const server = net.createServer((connection) => {
       }
       if (arr[i].toLocaleUpperCase() === "RPUSH") {
         const listName = arr[i + 1];
-        const listElements = arr.slice(i + 2);
-        const arrayExists = map.get(listElements);
-        const existingValue = map.get(listElements).value;
+        const newListElements = arr.slice(i + 2);
+        const arrayExists = map.get(listName);
+        const existingValue = map.get(listName).value;
         map.set(listName, {
           value: arrayExists
-            ? [...existingValue, ...listElements]
-            : [listElements],
+            ? [...existingValue, ...newListElements]
+            : [newListElements],
           expiry: Infinity,
         });
 
-        connection.write(`:${map.get(listName).value.length}\r\n`)
+        connection.write(`:${map.get(listName).value.length}\r\n`);
       }
     }
   });
