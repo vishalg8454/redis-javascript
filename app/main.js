@@ -1,16 +1,30 @@
 const net = require("net");
 const { rParser } = require("./parser");
 
+const EventEmitter = require("events");
+const emitter = new EventEmitter();
+
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 console.log("Logs from your program will appear here!");
 
 const map = new Map();
 
+const waitList = new Map();
+
+const checkWaitlist = (listKey) => {
+  const queue = waitList.get(listKey);
+  if (Array.isArray(queue) && queue.length > 0) {
+    const front = queue.shift();
+    waitList.set(listKey, queue);
+    emitter.emit(front, listKey);
+  }
+};
+
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
     const str = data.toString();
     const arr = rParser(str);
-    console.log("parsed array", arr);
+    // console.log("parsed array", arr);
     for (let i = 0; i < arr.length; i++) {
       if (arr[i].toLocaleUpperCase() === "PING") {
         connection.write("+PONG\r\n");
@@ -57,7 +71,7 @@ const server = net.createServer((connection) => {
             : [...newListElements],
           expiry: Infinity,
         });
-
+        checkWaitlist(listKey);
         connection.write(`:${map.get(listKey).value.length}\r\n`);
       }
       if (arr[i].toLocaleUpperCase() === "LRANGE") {
@@ -112,16 +126,44 @@ const server = net.createServer((connection) => {
         if (countToRemove === 1) {
           //return string
           responseString += `$${elementsToBeRemoved[0].length}\r\n${elementsToBeRemoved[0]}\r\n`;
-          console.log("1", responseString);
         } else {
           //return array
           responseString += `*${elementsToBeRemoved.length}\r\n`;
           elementsToBeRemoved.forEach((element) => {
             responseString += `$${element.length}\r\n${element}\r\n`;
           });
-          console.log("2", responseString);
         }
         connection.write(responseString);
+      }
+      if (arr[i].toLocaleUpperCase() === "BLPOP") {
+        const listKey = arr[i + 1];
+        const timeout = Number(arr[i + 2]);
+
+        const existingArray = map.get(listKey).value;
+        if (existingArray.length > 0) {
+          //we have an element ready
+          const elementToBeRemoved = existingArray[0];
+          map.set(listKey, {
+            value: existingArray.slice(1),
+            expiry: Infinity,
+          });
+          connection.write(
+            `$${elementToBeRemoved.length}\r\n${elementToBeRemoved}\r\n`
+          );
+        }
+        const clientAddress = `${connection.remoteAddress}:${connection.remotePort}`;
+        const previousQueue = waitList.get(listKey) || [];
+        waitList.set(listKey, [...previousQueue, clientAddress]);
+        emitter.once(clientAddress, (listKey) => {
+          const existingArray = map.get(listKey).value;
+          const elementToBeRemoved = existingArray[0];
+          map.set(listKey, {
+            value: existingArray.slice(1),
+            expiry: Infinity,
+          });
+          const responseString = `$${elementToBeRemoved.length}\r\n${elementToBeRemoved}\r\n`;
+          connection.write(responseString);
+        });
       }
     }
   });
