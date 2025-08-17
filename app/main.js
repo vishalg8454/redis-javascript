@@ -114,6 +114,7 @@ const server = net.createServer((connection) => {
           responseString += `$${elementsToBeRemoved[0].length}\r\n${elementsToBeRemoved[0]}\r\n`;
         } else {
           //return bulk string
+          responseString += `*${elementsToBeRemoved.length}\r\n`;
           elementsToBeRemoved.forEach((element) => {
             responseString += `$${element.length}\r\n${element}\r\n`;
           });
