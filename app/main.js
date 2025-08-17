@@ -43,14 +43,17 @@ const server = net.createServer((connection) => {
 
         connection.write("+OK\r\n");
       }
-      if (arr[i].toLocaleUpperCase() === "RPUSH") {
+      if (["RPUSH", "LPUSH"].includes(arr[i].toLocaleUpperCase())) {
+        const isLeftPush = arr[i] === "LPUSH";
         const listKey = arr[i + 1];
         const newListElements = arr.slice(i + 2);
         const arrayExists = map.get(listKey);
         const existingValue = map.get(listKey)?.value;
         map.set(listKey, {
           value: arrayExists
-            ? [...existingValue, ...newListElements]
+            ? isLeftPush
+              ? [...newListElements, ...existingValue]
+              : [...existingValue, ...newListElements]
             : [...newListElements],
           expiry: Infinity,
         });
