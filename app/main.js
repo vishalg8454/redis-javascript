@@ -47,7 +47,7 @@ const server = net.createServer((connection) => {
         const listName = arr[i + 1];
         const newListElements = arr.slice(i + 2);
         const arrayExists = map.get(listName);
-        const existingValue = map.get(listName).value;
+        const existingValue = map.get(listName)?.value;
         map.set(listName, {
           value: arrayExists
             ? [...existingValue, ...newListElements]
