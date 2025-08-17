@@ -45,7 +45,7 @@ const server = net.createServer((connection) => {
       }
       if (arr[i].toLocaleUpperCase() === "RPUSH") {
         const listName = arr[i + 1];
-        const listElements = slice(arr.slice(i + 2));
+        const listElements = arr.slice(i + 2);
         const arrayExists = map.get(listElements);
         map.set(listName, {
           value: arrayExists
