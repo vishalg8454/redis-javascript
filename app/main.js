@@ -109,7 +109,7 @@ const server = net.createServer((connection) => {
           expiry: Infinity,
         });
         let responseString = "";
-        if (elementsToBeRemoved === 1) {
+        if (countToRemove === 1) {
           //return string
           responseString += `$${elementsToBeRemoved[0].length}\r\n${elementsToBeRemoved[0]}\r\n`;
           console.log("1", responseString);
