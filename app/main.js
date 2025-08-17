@@ -52,7 +52,7 @@ const server = net.createServer((connection) => {
         map.set(listKey, {
           value: arrayExists
             ? isLeftPush
-              ? [...newListElements, ...existingValue]
+              ? [...newListElements.reverse(), ...existingValue]
               : [...existingValue, ...newListElements]
             : [...newListElements],
           expiry: Infinity,
