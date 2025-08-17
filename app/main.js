@@ -70,9 +70,9 @@ const server = net.createServer((connection) => {
               : [...existingValue, ...newListElements]
             : [...newListElements],
           expiry: Infinity,
-        });
-        checkWaitlist(listKey);
+        });        
         connection.write(`:${map.get(listKey).value.length}\r\n`);
+        checkWaitlist(listKey);
       }
       if (arr[i].toLocaleUpperCase() === "LRANGE") {
         const listKey = arr[i + 1];
