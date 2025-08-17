@@ -136,8 +136,21 @@ const server = net.createServer((connection) => {
         connection.write(responseString);
       }
       if (arr[i].toLocaleUpperCase() === "BLPOP") {
+        const clientAddress = `${connection.remoteAddress}:${connection.remotePort}`;
         const listKey = arr[i + 1];
         const timeout = Number(arr[i + 2]);
+        let timeoutId;
+
+        if (timeout !== 0) {
+          timeoutId = setTimeout(() => {
+            connection.write("$-1\r\n");
+            let queue = waitList.get(listKey);
+            if (Array.isArray(queue) && queue.length > 0) {
+              queue = queue.filter((it) => it !== clientAddress);
+              waitList.set(listKey, queue);
+            }
+          }, timeout * 1000);
+        }
 
         const existingArray = map.get(listKey)?.value || [];
         if (existingArray.length > 0) {
@@ -151,7 +164,6 @@ const server = net.createServer((connection) => {
             `$${elementToBeRemoved.length}\r\n${elementToBeRemoved}\r\n`
           );
         }
-        const clientAddress = `${connection.remoteAddress}:${connection.remotePort}`;
         const previousQueue = waitList.get(listKey) || [];
         waitList.set(listKey, [...previousQueue, clientAddress]);
         emitter.once(clientAddress, (listKey) => {
@@ -166,6 +178,7 @@ const server = net.createServer((connection) => {
           responseString += `$${listKey.length}\r\n${listKey}\r\n`;
           responseString += `$${elementToBeRemoved.length}\r\n${elementToBeRemoved}\r\n`;
           connection.write(responseString);
+          clearTimeout(timeoutId);
         });
       }
     }
