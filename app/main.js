@@ -107,7 +107,7 @@ const server = net.createServer((connection) => {
           value: existingArray.slice(1),
           expiry: Infinity,
         });
-        let responseString = `$${elementToBeRemoved.length}\r\n${elementToBeRemoved}`;
+        let responseString = `$${elementToBeRemoved.length}\r\n${elementToBeRemoved}\r\n`;
         connection.write(responseString)
       }
     }
