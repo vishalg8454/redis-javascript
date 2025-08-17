@@ -86,7 +86,7 @@ const server = net.createServer((connection) => {
         const listKey = arr[i + 1];
         const arrayExists = map.get(listKey);
         if (!arrayExists) {
-          connection.write(`*0\r\n`);
+          connection.write(`:0\r\n`);
         }
         const arrLength = map.get(listKey).value.length;
         let responseString = `:${arrLength}\r\n`;
