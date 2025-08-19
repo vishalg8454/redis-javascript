@@ -222,7 +222,7 @@ const server = net.createServer((connection) => {
             }
           } else {
             valid = receivedMs >= 0 && receivedSeq >= 0;
-            error = "0-0";
+            error = valid ? "" : "0-0";
           }
           if (!valid) {
             if (error === "0-0") {
