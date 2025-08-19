@@ -221,6 +221,7 @@ const server = net.createServer((connection) => {
             }
           } else {
             valid = receivedMs >= 0 && receivedSeq > 0;
+            console.log("2", receivedMs, receivedSeq);
             if (!valid) {
               connection.write(
                 "-ERR The ID specified in XADD must be greater than 0-0\r\n"
