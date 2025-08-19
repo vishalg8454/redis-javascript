@@ -206,6 +206,19 @@ const server = net.createServer((connection) => {
         //id can be * | <ms>-* | <ms>-<seq>
         if (id === "*") {
         } else if (id.split("-")[1] === "*") {
+          const receivedMs = Number(id.split("-")[0]);
+          if (result) {
+            const lastElement = result.at(-1);
+            const ms = lastElement.ms;
+            const seq = lastElement.seq;
+            if (lastElement.ms === ms) {
+              actualId = `${ms}-${seq + 1}`;
+            } else {
+              actualId = `${id.split("-")[0]}-${receivedMs === 0 ? 1 : 0}`;
+            }
+          } else {
+            actualId = `${id.split("-")[0]}-${receivedMs === 0 ? 1 : 0}`;
+          }
         } else {
           let valid = true;
           const receivedMs = Number(id.split("-")[0]);
