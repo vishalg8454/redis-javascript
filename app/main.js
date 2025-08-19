@@ -201,15 +201,36 @@ const server = net.createServer((connection) => {
       if (arr[i].toLocaleUpperCase() === "XADD") {
         const itemKey = arr[i + 1];
         const id = arr[i + 2];
+        const result = map.get(itemKey);
         let actualId = "";
         //id can be * | <ms>-* | <ms>-<seq>
         if (id === "*") {
         } else if (id.split("-")[1] === "*") {
         } else {
+          let valid = true;
+          const receivedMs = Number(id.split("-")[0]);
+          const receivedSeq = Number(id.split("-")[1]);
+          if (result) {
+            const lastElement = result.at(-1);
+            const ms = lastElement.ms;
+            const seq = lastElement.seq;
+            if (receivedMs === ms) {
+              valid = receivedSeq > seq;
+            } else {
+              valid = ms >= receivedMs;
+            }
+          } else {
+            valid = receivedMs >= 0 && receivedSeq >= 0;
+          }
+          if (!valid) {
+            connection.write(
+              "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n"
+            );
+            break;
+          }
           actualId = id;
         }
         const restKvPairs = arr.splice(2);
-        const result = map.get(itemKey);
         let arrayOfNewItems = result ? [...result] : [];
         for (let i = 0; i < restKvPairs.length; i += 2) {
           const key = restKvPairs[i];
