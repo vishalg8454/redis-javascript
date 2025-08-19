@@ -185,15 +185,41 @@ const server = net.createServer((connection) => {
         const itemKey = arr[i + 1];
         const result = map.get(itemKey);
         const value = result?.value;
+        if (Array.isArray(result)) {
+          connection.write("+stream\r\n");
+        }
         if (!value) {
           connection.write("+none\r\n");
         }
-        if(Array.isArray(value)){
+        if (Array.isArray(value)) {
           connection.write("+list\r\n");
         }
-        if(typeof value === "string"){
+        if (typeof value === "string") {
           connection.write("+string\r\n");
         }
+      }
+      if (arr[i].toLocaleUpperCase() === "XADD") {
+        const itemKey = arr[i + 1];
+        const id = arr[i + 2];
+        let actualId = "";
+        //id can be * | <ms>-* | <ms>-<seq>
+        if (id === "*") {
+        } else if (id.split("-")[1] === "*") {
+        } else {
+          actualId = id;
+        }
+        const restKvPairs = arr.splice(2);
+        const result = map.get(itemKey);
+        let arrayOfNewItems = result ? [...result] : [];
+        for (let i = 0; i < restKvPairs.length; i += 2) {
+          const key = restKvPairs[i];
+          const value = restKvPairs[i + 1];
+          const ms = Number(actualId.split("-")[0]);
+          const seq = Number(actualId.split("-")[1]);
+          arrayOfNewItems.push({ ms, seq, key, value });
+        }
+        map.set(itemKey, arrayOfNewItems);
+        connection.write(`$${actualId.length}\r\n${actualId}\r\n`);
       }
     }
   });
