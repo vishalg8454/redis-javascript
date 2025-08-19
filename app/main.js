@@ -210,6 +210,13 @@ const server = net.createServer((connection) => {
           let valid = true;
           const receivedMs = Number(id.split("-")[0]);
           const receivedSeq = Number(id.split("-")[1]);
+          valid = receivedMs >= 0 && receivedSeq > 0;
+          if (!valid) {
+            connection.write(
+              "-ERR The ID specified in XADD must be greater than 0-0\r\n"
+            );
+            break;
+          }
           if (result) {
             const lastElement = result.at(-1);
             const ms = lastElement.ms;
@@ -218,15 +225,6 @@ const server = net.createServer((connection) => {
               valid = receivedSeq > seq;
             } else {
               valid = receivedMs >= ms;
-            }
-          } else {
-            valid = receivedMs >= 0 && receivedSeq > 0;
-            console.log("2", receivedMs, receivedSeq);
-            if (!valid) {
-              connection.write(
-                "-ERR The ID specified in XADD must be greater than 0-0\r\n"
-              );
-              break;
             }
           }
           if (!valid) {
