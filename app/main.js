@@ -210,7 +210,7 @@ const server = net.createServer((connection) => {
           let valid = true;
           const receivedMs = Number(id.split("-")[0]);
           const receivedSeq = Number(id.split("-")[1]);
-          const error = "";
+          let error = "";
           if (result) {
             const lastElement = result.at(-1);
             const ms = lastElement.ms;
