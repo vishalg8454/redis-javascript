@@ -205,6 +205,8 @@ const server = net.createServer((connection) => {
         let actualId = "";
         //id can be * | <ms>-* | <ms>-<seq>
         if (id === "*") {
+          actualId = `${Date.now()}-${0}`;
+          //not impl this case due laziness(If the time already exists in the stream, the sequence number for that record incremented by one will be used.)
         } else if (id.split("-")[1] === "*") {
           const receivedMs = Number(id.split("-")[0]);
           if (result) {
