@@ -181,6 +181,20 @@ const server = net.createServer((connection) => {
           clearTimeout(timeoutId);
         });
       }
+      if (arr[i].toLocaleUpperCase() === "TYPE") {
+        const itemKey = arr[i + 1];
+        const result = map.get(key);
+        const value = result.value;
+        if (!value) {
+          connection.write("+none\r\n");
+        }
+        if(Array.isArray(value)){
+          connection.write("+list\r\n");
+        }
+        if(typeof value === "string"){
+          connection.write("+string\r\n");
+        }
+      }
     }
   });
 });
