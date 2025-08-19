@@ -183,7 +183,7 @@ const server = net.createServer((connection) => {
       }
       if (arr[i].toLocaleUpperCase() === "TYPE") {
         const itemKey = arr[i + 1];
-        const result = map.get(key);
+        const result = map.get(itemKey);
         const value = result.value;
         if (!value) {
           connection.write("+none\r\n");
