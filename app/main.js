@@ -217,7 +217,7 @@ const server = net.createServer((connection) => {
             if (receivedMs === ms) {
               valid = receivedSeq > seq;
             } else {
-              valid = ms >= receivedMs;
+              valid = receivedMs >= ms;
             }
           } else {
             valid = receivedMs >= 0 && receivedSeq >= 0;
