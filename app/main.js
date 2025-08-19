@@ -210,6 +210,7 @@ const server = net.createServer((connection) => {
           let valid = true;
           const receivedMs = Number(id.split("-")[0]);
           const receivedSeq = Number(id.split("-")[1]);
+          const error = "";
           if (result) {
             const lastElement = result.at(-1);
             const ms = lastElement.ms;
@@ -221,11 +222,18 @@ const server = net.createServer((connection) => {
             }
           } else {
             valid = receivedMs >= 0 && receivedSeq >= 0;
+            error = "0-0";
           }
           if (!valid) {
-            connection.write(
-              "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n"
-            );
+            if (error === "0-0") {
+              connection.write(
+                "ERR The ID specified in XADD must be greater than 0-0\r\n"
+              );
+            } else {
+              connection.write(
+                "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n"
+              );
+            }
             break;
           }
           actualId = id;
