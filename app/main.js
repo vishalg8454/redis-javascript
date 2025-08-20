@@ -37,8 +37,18 @@ const arrayToRespString = (arr) => {
   return str;
 };
 
-const compare = (ms, seq, startMs, startSeq, endMs, endSeq) => {
+const between = (ms, seq, startMs, startSeq, endMs, endSeq) => {
   return ms >= startMs && ms <= endMs && seq >= startSeq && seq <= endSeq;
+};
+
+const greater = (ms, seq, argMs, argSeq) => {
+  if (ms < argMs) {
+    return false;
+  }
+  if (ms === argMs) {
+    return seq > argSeq;
+  }
+  return true;
 };
 
 const server = net.createServer((connection) => {
@@ -311,7 +321,7 @@ const server = net.createServer((connection) => {
               break;
             }
             const localArr = [];
-            if (compare(ms, seq, startMs, startSeq, endMs, endSeq)) {
+            if (between(ms, seq, startMs, startSeq, endMs, endSeq)) {
               localArr.push(String(ms) + "-" + String(seq));
               const kvArray = [];
               kv.forEach((it) => {
@@ -338,6 +348,7 @@ const server = net.createServer((connection) => {
           const currentKey = it[0];
           const currentId = it[1];
           const currentMs = Number(currentId.split("-")[0]);
+          const currentSeq = Number(currentId.split("-")[1]);
           const arrForCurrentKey = [];
           arrForCurrentKey.push(currentKey);
           const resultForCurrentKey = [];
@@ -347,7 +358,7 @@ const server = net.createServer((connection) => {
               const it = result[i];
               const { ms, seq, kv } = it;
               console.log("comparison", ms, currentMs);
-              if (ms > currentMs) {
+              if (greater(ms, seq, currentMs, currentSeq)) {
                 console.log("inside");
                 const localArr = [];
                 localArr.push(String(ms) + "-" + String(seq));
