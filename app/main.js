@@ -346,7 +346,9 @@ const server = net.createServer((connection) => {
             for (let i = 0; i < result.length; i++) {
               const it = result[i];
               const { ms, seq, kv } = it;
+              console.log("comparison", ms, currentMs);
               if (ms > currentMs) {
+                console.log("inside");
                 const localArr = [];
                 localArr.push(String(ms) + "-" + String(seq));
                 kv.forEach((it) => {
