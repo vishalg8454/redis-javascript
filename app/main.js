@@ -304,7 +304,7 @@ const server = net.createServer((connection) => {
               break;
             }
             if (ms >= startMs && ms <= endMs) {
-              responseArr.push([String(ms)]);
+              responseArr.push([String(ms) + "-" + String(seq)]);
               kv.forEach((it) => {
                 responseArr.push(it.key);
                 responseArr.push(it.value);
@@ -312,6 +312,7 @@ const server = net.createServer((connection) => {
             }
           }
         }
+        console.log("responseArr", responseArr);
         connection.write(arrayToRespString(responseArr));
       }
     }
