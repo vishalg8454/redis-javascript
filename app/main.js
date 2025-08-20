@@ -268,19 +268,19 @@ const server = net.createServer((connection) => {
         const endMs = Number(endId);
         const result = map.get(itemKey);
         console.log("result",result);
-        let arr = [];
-        if (result) {
-          for (let i = 0; i < result.length; i++) {
-            const it = result[i];
-            const { ms, seq, key, value } = it;
-            if (ms > endMs) {
-              break;
-            }
-            if(ms>=startMs&&ms<=endMs){
-              arr.push([String(ms)])
-            }
-          }
-        }
+        // let arr = [];
+        // if (result) {
+        //   for (let i = 0; i < result.length; i++) {
+        //     const it = result[i];
+        //     const { ms, seq, key, value } = it;
+        //     if (ms > endMs) {
+        //       break;
+        //     }
+        //     if(ms>=startMs&&ms<=endMs){
+        //       arr.push([String(ms)])
+        //     }
+        //   }
+        // }
       }
     }
   });
