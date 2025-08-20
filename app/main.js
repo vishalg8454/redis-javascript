@@ -302,7 +302,6 @@ const server = net.createServer((connection) => {
         const endSeq =
           endId === "+" ? Infinity : Number(endId.split("-")[1]) ?? 0;
         const result = map.get(itemKey);
-        console.log("result", JSON.stringify(result));
         let responseArr = [];
         if (result) {
           for (let i = 0; i < result.length; i++) {
@@ -324,7 +323,43 @@ const server = net.createServer((connection) => {
             }
           }
         }
-        console.log("responseArr", responseArr);
+        connection.write(arrayToRespString(responseArr));
+      }
+      if (arr[i].toLocaleUpperCase() === "XREAD") {
+        const keyAndIdArgs = arr.splice(2);
+        const arrOfKeyAndIds = [];
+        for (let i = 0; i < keyAndIdArgs.length; i++) {
+          const key = keyAndIdArgs[i];
+          const id = keyAndIdArgs[i + keyAndIdArgs.length / 2];
+          arrOfKeyAndIds.push([key, id]);
+        }
+        const responseArr = [];
+        arrOfKeyAndIds.forEach((it) => {
+          const currentKey = it[0];
+          const currentId = it[1];
+          const currentMs = Number(currentId.split("-")[0]);
+          const arrForCurrentKey = [];
+          arrForCurrentKey.push(currentKey);
+          const resultForCurrentKey = [];
+          const result = map.get(currentKey);
+          if (result) {
+            for (let i = 0; i < result.length; i++) {
+              const it = result[i];
+              const { ms, seq, kv } = it;
+              if (ms > currentMs) {
+                const localArr = [];
+                localArr.push(String(ms) + "-" + String(seq));
+                kv.forEach((it) => {
+                  localArr.push(it.key);
+                  localArr.push(it.value);
+                });
+                resultForCurrentKey.push(localArr);
+              }
+            }
+            arrForCurrentKey.push(resultForCurrentKey);
+            responseArr.push(arrForCurrentKey);
+          }
+        });
         connection.write(arrayToRespString(responseArr));
       }
     }
