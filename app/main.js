@@ -250,7 +250,7 @@ const server = net.createServer((connection) => {
           }
           actualId = id;
         }
-        const kVPairs = arr.splice(2);
+        const kVPairs = arr.splice(3);
         let arrayOfNewItems = result ? [...result] : [];
         for (let i = 0; i < kVPairs.length; i += 2) {
           const key = kVPairs[i];
