@@ -303,12 +303,14 @@ const server = net.createServer((connection) => {
             if (ms > endMs) {
               break;
             }
+            const localArr = [];
             if (ms >= startMs && ms <= endMs) {
-              responseArr.push([String(ms) + "-" + String(seq)]);
+              localArr.push(String(ms) + "-" + String(seq));
               kv.forEach((it) => {
-                responseArr.push(it.key);
-                responseArr.push(it.value);
+                localArr.push(it.key);
+                localArr.push(it.value);
               });
+              responseArr.push(localArr);
             }
           }
         }
