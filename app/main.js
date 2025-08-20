@@ -318,8 +318,8 @@ const server = net.createServer((connection) => {
                 kvArray.push(it.value);
               });
               localArr.push(kvArray);
+              responseArr.push(localArr);
             }
-            responseArr.push(localArr);
           }
         }
         console.log("responseArr", responseArr);
