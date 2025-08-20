@@ -294,7 +294,7 @@ const server = net.createServer((connection) => {
         const startMs = Number(startId);
         const endMs = Number(endId);
         const result = map.get(itemKey);
-        // console.log("result", JSON.stringify(result));
+        console.log("result", JSON.stringify(result));
         let responseArr = [];
         if (result) {
           for (let i = 0; i < result.length; i++) {
