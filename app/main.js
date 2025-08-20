@@ -328,7 +328,7 @@ const server = net.createServer((connection) => {
       if (arr[i].toLocaleUpperCase() === "XREAD") {
         const keyAndIdArgs = arr.splice(2);
         const arrOfKeyAndIds = [];
-        for (let i = 0; i < keyAndIdArgs.length; i++) {
+        for (let i = 0; i < keyAndIdArgs.length / 2; i++) {
           const key = keyAndIdArgs[i];
           const id = keyAndIdArgs[i + keyAndIdArgs.length / 2];
           arrOfKeyAndIds.push([key, id]);
