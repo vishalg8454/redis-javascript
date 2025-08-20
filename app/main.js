@@ -312,12 +312,14 @@ const server = net.createServer((connection) => {
             const localArr = [];
             if (compare(ms, seq, startMs, startSeq, endMs, endSeq)) {
               localArr.push(String(ms) + "-" + String(seq));
+              const kvArray = [];
               kv.forEach((it) => {
-                localArr.push(it.key);
-                localArr.push(it.value);
+                kvArray.push(it.key);
+                kvArray.push(it.value);
               });
-              responseArr.push(localArr);
+              localArr.push(kvArray);
             }
+            responseArr.push(localArr);
           }
         }
         console.log("responseArr", responseArr);
