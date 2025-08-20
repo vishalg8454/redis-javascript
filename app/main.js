@@ -20,6 +20,23 @@ const checkWaitlist = (listKey) => {
   }
 };
 
+const stringToBulkString = (str) => {
+  return `$${str.length}\r\n${str}\r\n`;
+};
+
+const arrayToRespString = (arr) => {
+  let str = "";
+  str += `*${arr.length}\r\n`;
+  arr.forEach((it) => {
+    if (typeof it === "string") {
+      str += stringToBulkString(it);
+    } else if (Array.isArray(it)) {
+      str += arrayToRespString(it);
+    }
+  });
+  return str;
+};
+
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
     const str = data.toString();
@@ -225,7 +242,15 @@ const server = net.createServer((connection) => {
           let valid = true;
           const receivedMs = Number(id.split("-")[0]);
           const receivedSeq = Number(id.split("-")[1]);
-          valid = receivedMs >= 0 && receivedSeq > 0;
+          if (receivedMs < 0 || receivedSeq < 0) {
+            valid = false;
+          }
+          if (receivedMs === 0) {
+            valid = receivedSeq > 0;
+          }
+          if (receivedMs > 0) {
+            valid = receivedMs >= 0;
+          }
           if (!valid) {
             connection.write(
               "-ERR The ID specified in XADD must be greater than 0-0\r\n"
@@ -252,13 +277,15 @@ const server = net.createServer((connection) => {
         }
         const kVPairs = arr.splice(3);
         let arrayOfNewItems = result ? [...result] : [];
+        const arrForReceivedItems = [];
         for (let i = 0; i < kVPairs.length; i += 2) {
           const key = kVPairs[i];
           const value = kVPairs[i + 1];
-          const ms = Number(actualId.split("-")[0]);
-          const seq = Number(actualId.split("-")[1]);
-          arrayOfNewItems.push({ ms, seq, key, value });
+          arrForReceivedItems.push({ key, value });
         }
+        const ms = Number(actualId.split("-")[0]);
+        const seq = Number(actualId.split("-")[1]);
+        arrayOfNewItems.push({ ms, seq, kv: arrForReceivedItems });
         map.set(itemKey, arrayOfNewItems);
         connection.write(`$${actualId.length}\r\n${actualId}\r\n`);
       }
@@ -267,20 +294,25 @@ const server = net.createServer((connection) => {
         const startMs = Number(startId);
         const endMs = Number(endId);
         const result = map.get(itemKey);
-        console.log("result",result);
-        // let arr = [];
-        // if (result) {
-        //   for (let i = 0; i < result.length; i++) {
-        //     const it = result[i];
-        //     const { ms, seq, key, value } = it;
-        //     if (ms > endMs) {
-        //       break;
-        //     }
-        //     if(ms>=startMs&&ms<=endMs){
-        //       arr.push([String(ms)])
-        //     }
-        //   }
-        // }
+        // console.log("result", JSON.stringify(result));
+        let responseArr = [];
+        if (result) {
+          for (let i = 0; i < result.length; i++) {
+            const it = result[i];
+            const { ms, seq, kv } = it;
+            if (ms > endMs) {
+              break;
+            }
+            if (ms >= startMs && ms <= endMs) {
+              responseArr.push([String(ms)]);
+              kv.forEach((it) => {
+                responseArr.push(it.key);
+                responseArr.push(it.value);
+              });
+            }
+          }
+        }
+        connection.write(arrayToRespString(responseArr));
       }
     }
   });
