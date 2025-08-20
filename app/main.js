@@ -37,6 +37,10 @@ const arrayToRespString = (arr) => {
   return str;
 };
 
+const compare = (a, b, c, d, e, f) => {
+  return e >= a && e >= c && f >= b && f >= d;
+};
+
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
     const str = data.toString();
@@ -292,7 +296,9 @@ const server = net.createServer((connection) => {
       if (arr[i].toLocaleUpperCase() === "XRANGE") {
         const [itemKey, startId, endId] = arr.slice(i + 1, i + 4);
         const startMs = Number(startId.split("-")[0]);
+        const startSeq = Number(startId.split("-")[1]) ?? 0;
         const endMs = Number(endId.split("-")[0]);
+        const endSeq = Number(endId.split("-")[1]) ?? 0;
         const result = map.get(itemKey);
         console.log("result", JSON.stringify(result));
         let responseArr = [];
@@ -304,7 +310,7 @@ const server = net.createServer((connection) => {
               break;
             }
             const localArr = [];
-            if (ms >= startMs && ms <= endMs) {
+            if (compare(startMs, startSeq, endMs, endSeq, ms, seq)) {
               localArr.push(String(ms) + "-" + String(seq));
               kv.forEach((it) => {
                 localArr.push(it.key);
