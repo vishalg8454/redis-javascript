@@ -250,17 +250,37 @@ const server = net.createServer((connection) => {
           }
           actualId = id;
         }
-        const restKvPairs = arr.splice(2);
+        const kVPairs = arr.splice(2);
         let arrayOfNewItems = result ? [...result] : [];
-        for (let i = 0; i < restKvPairs.length; i += 2) {
-          const key = restKvPairs[i];
-          const value = restKvPairs[i + 1];
+        for (let i = 0; i < kVPairs.length; i += 2) {
+          const key = kVPairs[i];
+          const value = kVPairs[i + 1];
           const ms = Number(actualId.split("-")[0]);
           const seq = Number(actualId.split("-")[1]);
           arrayOfNewItems.push({ ms, seq, key, value });
         }
         map.set(itemKey, arrayOfNewItems);
         connection.write(`$${actualId.length}\r\n${actualId}\r\n`);
+      }
+      if (arr[i].toLocaleUpperCase() === "XRANGE") {
+        const [itemKey, startId, endId] = arr.slice(i + 1, i + 4);
+        const startMs = Number(startId);
+        const endMs = Number(endId);
+        const result = map.get(itemKey);
+        console.log("result",result);
+        let arr = [];
+        if (result) {
+          for (let i = 0; i < result.length; i++) {
+            const it = result[i];
+            const { ms, seq, key, value } = it;
+            if (ms > endMs) {
+              break;
+            }
+            if(ms>=startMs&&ms<=endMs){
+              arr.push([String(ms)])
+            }
+          }
+        }
       }
     }
   });
