@@ -37,8 +37,8 @@ const arrayToRespString = (arr) => {
   return str;
 };
 
-const compare = (a, b, c, d, e, f) => {
-  return e >= a && e >= c && f >= b && f >= d;
+const compare = (ms, seq, startMs, startSeq, endMs, endSeq) => {
+  return ms >= startMs && ms <= endMs && seq >= startSeq && seq <= endSeq;
 };
 
 const server = net.createServer((connection) => {
@@ -310,7 +310,7 @@ const server = net.createServer((connection) => {
               break;
             }
             const localArr = [];
-            if (compare(startMs, startSeq, endMs, endSeq, ms, seq)) {
+            if (compare(ms, seq, startMs, startSeq, endMs, endSeq)) {
               localArr.push(String(ms) + "-" + String(seq));
               kv.forEach((it) => {
                 localArr.push(it.key);
