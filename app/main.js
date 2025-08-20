@@ -291,8 +291,8 @@ const server = net.createServer((connection) => {
       }
       if (arr[i].toLocaleUpperCase() === "XRANGE") {
         const [itemKey, startId, endId] = arr.slice(i + 1, i + 4);
-        const startMs = Number(startId);
-        const endMs = Number(endId);
+        const startMs = Number(startId.split("-")[0]);
+        const endMs = Number(endId.split("-")[0]);
         const result = map.get(itemKey);
         console.log("result", JSON.stringify(result));
         let responseArr = [];
