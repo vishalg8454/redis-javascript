@@ -362,10 +362,12 @@ const server = net.createServer((connection) => {
                 console.log("inside");
                 const localArr = [];
                 localArr.push(String(ms) + "-" + String(seq));
+                const kvArray = [];
                 kv.forEach((it) => {
-                  localArr.push(it.key);
-                  localArr.push(it.value);
+                  kvArray.push(it.key);
+                  kvArray.push(it.value);
                 });
+                localArr.push(kvArray);
                 resultForCurrentKey.push(localArr);
               }
             }
