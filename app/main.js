@@ -190,29 +190,29 @@ const server = net.createServer((connection) => {
         const result = store.get(itemKey);
         const value = result?.value;
         if (Array.isArray(result)) {
-          connection.write("+stream\r\n");
+          connection.write(stringToSimpleString("stream"));
         }
         if (!value) {
-          connection.write("+none\r\n");
+          connection.write(stringToSimpleString("none"));
         }
         if (Array.isArray(value)) {
-          connection.write("+list\r\n");
+          connection.write(stringToSimpleString("list"));
         }
         if (typeof value === "string") {
-          connection.write("+string\r\n");
+          connection.write(stringToSimpleString("string"));
         }
       }
       if (arr[i].toLocaleUpperCase() === "XADD") {
         const itemKey = arr[i + 1];
-        const id = arr[i + 2];
+        const receivedId = arr[i + 2];
         const result = store.get(itemKey);
         let actualId = "";
         //id can be * | <ms>-* | <ms>-<seq>
-        if (id === "*") {
+        if (receivedId === "*") {
           actualId = `${Date.now()}-${0}`;
           //not impl this case due laziness(If the time already exists in the stream, the sequence number for that record incremented by one will be used.)
-        } else if (id.split("-")[1] === "*") {
-          const receivedMs = Number(id.split("-")[0]);
+        } else if (receivedId.split("-")[1] === "*") {
+          const receivedMs = Number(receivedId.split("-")[0]);
           if (result) {
             const lastElement = result.at(-1);
             const lastElementMs = lastElement.ms;
@@ -226,19 +226,19 @@ const server = net.createServer((connection) => {
             actualId = `${receivedMs}-${receivedMs === 0 ? 1 : 0}`;
           }
         } else {
-          let valid = true;
-          const receivedMs = Number(id.split("-")[0]);
-          const receivedSeq = Number(id.split("-")[1]);
+          let isReceivedIdValid = true;
+          const receivedMs = Number(receivedId.split("-")[0]);
+          const receivedSeq = Number(receivedId.split("-")[1]);
           if (receivedMs < 0 || receivedSeq < 0) {
-            valid = false;
+            isReceivedIdValid = false;
           }
           if (receivedMs === 0) {
-            valid = receivedSeq > 0;
+            isReceivedIdValid = receivedSeq > 0;
           }
           if (receivedMs > 0) {
-            valid = receivedMs >= 0;
+            isReceivedIdValid = receivedMs >= 0;
           }
-          if (!valid) {
+          if (!isReceivedIdValid) {
             connection.write(
               "-ERR The ID specified in XADD must be greater than 0-0\r\n"
             );
@@ -249,18 +249,18 @@ const server = net.createServer((connection) => {
             const ms = lastElement.ms;
             const seq = lastElement.seq;
             if (receivedMs === ms) {
-              valid = receivedSeq > seq;
+              isReceivedIdValid = receivedSeq > seq;
             } else {
-              valid = receivedMs >= ms;
+              isReceivedIdValid = receivedMs >= ms;
             }
           }
-          if (!valid) {
+          if (!isReceivedIdValid) {
             connection.write(
               "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n"
             );
             break;
           }
-          actualId = id;
+          actualId = receivedId;
         }
         const kVPairs = arr.splice(3);
         let arrayOfNewItems = result ? [...result] : [];
@@ -414,5 +414,3 @@ const server = net.createServer((connection) => {
 });
 
 server.listen(6379, "127.0.0.1");
-
-console.log();
