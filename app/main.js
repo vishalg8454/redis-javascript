@@ -366,6 +366,8 @@ const server = net.createServer((connection) => {
               currentId === "$" ? lastMs : Number(currentId.split("-")[0]);
             const currentSeq =
               currentId === "$" ? lastSeq : Number(currentId.split("-")[1]);
+            console.log("currentMs", currentMs);
+            console.log("currentSeq", currentSeq);
 
             let timeoutId;
 
