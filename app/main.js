@@ -394,9 +394,9 @@ const server = net.createServer((connection) => {
                 let queue = streamWaitList.get(currentKey);
                 if (Array.isArray(queue) && queue.length > 0) {
                   queue = queue.filter((it) => it !== clientAddress);
-                  streamWaitList.set(listKey, queue);
+                  streamWaitList.set(currentKey, queue);
                 }
-              }, blockingTime * 1000);
+              }, blockingTime);
             }
 
             const previousQueue = streamWaitList.get(currentKey) || [];
