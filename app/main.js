@@ -400,6 +400,7 @@ const server = net.createServer((connection) => {
             const previousQueue = streamWaitList.get(currentKey) || [];
             streamWaitList.set(currentKey, [...previousQueue, clientAddress]);
             streamEmitter.once(clientAddress, (streamKey) => {
+              console.log("inside stream emitter")
               const responseArr = [];
               const result = map.get(currentKey);
               const arrForCurrentKey = [];
@@ -428,6 +429,7 @@ const server = net.createServer((connection) => {
                 responseArr.push(arrForCurrentKey);
               }
               connection.write(arrayToRespString(responseArr));
+              clearTimeout(timeoutId)
             });
           });
         }
