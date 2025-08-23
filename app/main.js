@@ -401,7 +401,7 @@ const server = net.createServer((connection) => {
             streamWaitList.set(currentKey, [...previousQueue, clientAddress]);
             streamEmitter.once(clientAddress, (streamKey) => {
               console.log(
-                "inside stream emitter looking for ",
+                "inside stream emitter looking for  ",
                 currentKey,
                 " ",
                 currentId
