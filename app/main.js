@@ -359,8 +359,13 @@ const server = net.createServer((connection) => {
           arrOfKeyAndIds.forEach((it) => {
             const currentKey = it[0];
             const currentId = it[1];
-            const currentMs = Number(currentId.split("-")[0]);
-            const currentSeq = Number(currentId.split("-")[1]);
+            const temp = store.get(currentKey);
+            const lastMs = temp.length ? temp.at(-1).ms : -1;
+            const lastSeq = temp.length ? temp.at(-1).seq : -1;
+            const currentMs =
+              currentId === "$" ? lastMs : Number(currentId.split("-")[0]);
+            const currentSeq =
+              currentId === "$" ? lastSeq : Number(currentId.split("-")[1]);
 
             let timeoutId;
 
