@@ -15,4 +15,15 @@ const arrayToRespString = (arr) => {
   return str;
 };
 
-module.exports = { stringToBulkString, arrayToRespString };
+const numberToRespInteger = (num) => {
+  return `:${num}\r\n`;
+};
+
+const nullBulkString = "$-1\r\n";
+
+module.exports = {
+  stringToBulkString,
+  arrayToRespString,
+  nullBulkString,
+  numberToRespInteger,
+};

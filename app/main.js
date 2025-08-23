@@ -1,6 +1,11 @@
 const net = require("net");
 const { rParser } = require("./parser");
-const { arrayToRespString } = require("./utils");
+const {
+  arrayToRespString,
+  stringToBulkString,
+  numberToRespInteger,
+  nullBulkString,
+} = require("./utils");
 
 const EventEmitter = require("events");
 const emitter = new EventEmitter();
@@ -50,7 +55,6 @@ const server = net.createServer((connection) => {
   connection.on("data", (data) => {
     const str = data.toString();
     const arr = rParser(str);
-    // console.log("parsed array", arr);
     for (let i = 0; i < arr.length; i++) {
       if (arr[i].toLocaleUpperCase() === "PING") {
         connection.write("+PONG\r\n");
@@ -66,9 +70,8 @@ const server = net.createServer((connection) => {
         const expiryTime = result.expiry;
         const expired = Date.now() > expiryTime;
         const resultString = expired
-          ? `$-1\r\n`
-          : `$${value.length}\r\n${value}\r\n`;
-        console.log("map", map);
+          ? nullBulkString
+          : stringToBulkString(value);
         connection.write(resultString);
       }
       if (arr[i].toLocaleUpperCase() === "SET") {
@@ -97,7 +100,7 @@ const server = net.createServer((connection) => {
             : [...newListElements],
           expiry: Infinity,
         });
-        connection.write(`:${map.get(listKey).value.length}\r\n`);
+        connection.write(numberToRespInteger(map.get(listKey).value.length));
         checkWaitlist(listKey);
       }
       if (arr[i].toLocaleUpperCase() === "LRANGE") {
@@ -106,7 +109,7 @@ const server = net.createServer((connection) => {
         let endIndex = Number(arr[i + 3]);
         const arrayExists = map.get(listKey);
         if (!arrayExists) {
-          connection.write(`*0\r\n`);
+          connection.write(arrayToRespString([]));
         }
         const arrLength = map.get(listKey).value.length;
         startIndex = startIndex < 0 ? arrLength + startIndex : startIndex;
@@ -116,17 +119,14 @@ const server = net.createServer((connection) => {
         const arrayElements = map
           .get(listKey)
           .value.slice(startIndex, endIndex + 1);
-        let responseString = `*${arrayElements.length}\r\n`;
-        arrayElements.forEach((element) => {
-          responseString += `$${element.length}\r\n${element}\r\n`;
-        });
+        let responseString = arrayToRespString(arrayElements);
         connection.write(responseString);
       }
       if (arr[i].toLocaleUpperCase() === "LLEN") {
         const listKey = arr[i + 1];
         const arrayExists = map.get(listKey);
         if (!arrayExists) {
-          connection.write(`:0\r\n`);
+          connection.write(numberToRespInteger(0));
         }
         const arrLength = map.get(listKey).value.length;
         let responseString = `:${arrLength}\r\n`;
@@ -137,11 +137,11 @@ const server = net.createServer((connection) => {
         const countToRemove = Number(arr[i + 2]) || 1;
         const arrayExists = map.get(listKey);
         if (!arrayExists) {
-          connection.write(`$-1\r\n`);
+          connection.write(nullBulkString);
         }
         const existingArray = map.get(listKey).value;
         if (!existingArray.length) {
-          connection.write(`$-1\r\n`);
+          connection.write(nullBulkString);
         }
         const elementsToBeRemoved = existingArray.slice(0, countToRemove);
         map.set(listKey, {
@@ -169,7 +169,7 @@ const server = net.createServer((connection) => {
 
         if (timeout !== 0) {
           timeoutId = setTimeout(() => {
-            connection.write("$-1\r\n");
+            connection.write(nullBulkString);
             let queue = waitList.get(listKey);
             if (Array.isArray(queue) && queue.length > 0) {
               queue = queue.filter((it) => it !== clientAddress);
@@ -199,10 +199,8 @@ const server = net.createServer((connection) => {
             value: existingArray.slice(1),
             expiry: Infinity,
           });
-          let responseString = "";
-          responseString += `*2\r\n`;
-          responseString += `$${listKey.length}\r\n${listKey}\r\n`;
-          responseString += `$${elementToBeRemoved.length}\r\n${elementToBeRemoved}\r\n`;
+          const responseArray = [listKey, elementToBeRemoved];
+          let responseString = arrayToRespString(responseArray);
           connection.write(responseString);
           clearTimeout(timeoutId);
         });
@@ -356,10 +354,8 @@ const server = net.createServer((connection) => {
             for (let i = 0; i < result.length; i++) {
               const it = result[i];
               const { ms, seq, kv } = it;
-              console.log("comparison", ms, currentMs);
               if (greater(ms, seq, currentMs, currentSeq)) {
                 someDataReturned = true;
-                console.log("inside");
                 const localArr = [];
                 localArr.push(String(ms) + "-" + String(seq));
                 const kvArray = [];
@@ -390,7 +386,7 @@ const server = net.createServer((connection) => {
 
             if (blockingTime) {
               timeoutId = setTimeout(() => {
-                connection.write("$-1\r\n");
+                connection.write(nullBulkString);
                 let queue = streamWaitList.get(currentKey);
                 if (Array.isArray(queue) && queue.length > 0) {
                   queue = queue.filter((it) => it !== clientAddress);
@@ -402,15 +398,8 @@ const server = net.createServer((connection) => {
             const previousQueue = streamWaitList.get(currentKey) || [];
             streamWaitList.set(currentKey, [...previousQueue, clientAddress]);
             streamEmitter.once(clientAddress, (streamKey) => {
-              console.log(
-                "inside stream emitter looking for  ",
-                currentKey,
-                " ",
-                currentId
-              );
               const responseArr = [];
               const result = map.get(currentKey);
-              console.log("result", result);
               const arrForCurrentKey = [];
               arrForCurrentKey.push(currentKey);
               const resultForCurrentKey = [];
@@ -418,10 +407,8 @@ const server = net.createServer((connection) => {
                 for (let i = 0; i < result.length; i++) {
                   const it = result[i];
                   const { ms, seq, kv } = it;
-                  console.log("comparison", ms, currentMs);
                   if (greater(ms, seq, currentMs, currentSeq)) {
                     someDataReturned = true;
-                    console.log("inside");
                     const localArr = [];
                     localArr.push(String(ms) + "-" + String(seq));
                     const kvArray = [];
