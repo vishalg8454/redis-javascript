@@ -1,8 +1,10 @@
 const net = require("net");
 const { rParser } = require("./parser");
+const { arrayToRespString } = require("./utils");
 
 const EventEmitter = require("events");
 const emitter = new EventEmitter();
+const streamEmitter = new EventEmitter();
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 console.log("Logs from your program will appear here!");
@@ -10,6 +12,7 @@ console.log("Logs from your program will appear here!");
 const map = new Map();
 
 const waitList = new Map();
+const streamWaitList = new Map();
 
 const checkWaitlist = (listKey) => {
   const queue = waitList.get(listKey);
@@ -20,21 +23,13 @@ const checkWaitlist = (listKey) => {
   }
 };
 
-const stringToBulkString = (str) => {
-  return `$${str.length}\r\n${str}\r\n`;
-};
-
-const arrayToRespString = (arr) => {
-  let str = "";
-  str += `*${arr.length}\r\n`;
-  arr.forEach((it) => {
-    if (typeof it === "string") {
-      str += stringToBulkString(it);
-    } else if (Array.isArray(it)) {
-      str += arrayToRespString(it);
-    }
-  });
-  return str;
+const checkStreamWaitlist = (streamKey) => {
+  const queue = streamWaitList.get(streamKey);
+  if (Array.isArray(queue) && queue.length > 0) {
+    const front = queue.shift();
+    streamWaitList.set(streamKey, queue);
+    streamEmitter.emit(front, streamKey);
+  }
 };
 
 const between = (ms, seq, startMs, startSeq, endMs, endSeq) => {
@@ -302,6 +297,7 @@ const server = net.createServer((connection) => {
         arrayOfNewItems.push({ ms, seq, kv: arrForReceivedItems });
         map.set(itemKey, arrayOfNewItems);
         connection.write(`$${actualId.length}\r\n${actualId}\r\n`);
+        checkStreamWaitlist(itemKey);
       }
       if (arr[i].toLocaleUpperCase() === "XRANGE") {
         const [itemKey, startId, endId] = arr.slice(i + 1, i + 4);
@@ -336,7 +332,9 @@ const server = net.createServer((connection) => {
         connection.write(arrayToRespString(responseArr));
       }
       if (arr[i].toLocaleUpperCase() === "XREAD") {
-        const keyAndIdArgs = arr.splice(2);
+        const isBlockingMode = arr[i + 1].toLocaleUpperCase() === "BLOCK";
+        const blockingTime = isBlockingMode ? Number(arr[i + 2]) : null;
+        const keyAndIdArgs = arr.splice(isBlockingMode ? 4 : 2);
         const arrOfKeyAndIds = [];
         for (let i = 0; i < keyAndIdArgs.length / 2; i++) {
           const key = keyAndIdArgs[i];
@@ -344,6 +342,7 @@ const server = net.createServer((connection) => {
           arrOfKeyAndIds.push([key, id]);
         }
         const responseArr = [];
+        let someDataReturned = false;
         arrOfKeyAndIds.forEach((it) => {
           const currentKey = it[0];
           const currentId = it[1];
@@ -359,6 +358,7 @@ const server = net.createServer((connection) => {
               const { ms, seq, kv } = it;
               console.log("comparison", ms, currentMs);
               if (greater(ms, seq, currentMs, currentSeq)) {
+                someDataReturned = true;
                 console.log("inside");
                 const localArr = [];
                 localArr.push(String(ms) + "-" + String(seq));
@@ -376,6 +376,61 @@ const server = net.createServer((connection) => {
           }
         });
         connection.write(arrayToRespString(responseArr));
+        if (!someDataReturned && isBlockingMode) {
+          const clientAddress = `${connection.remoteAddress}:${connection.remotePort}`;
+          arrOfKeyAndIds.forEach((it) => {
+            const currentKey = it[0];
+            const currentId = it[1];
+            const currentMs = Number(currentId.split("-")[0]);
+            const currentSeq = Number(currentId.split("-")[1]);
+
+            let timeoutId;
+
+            if (blockingTime) {
+              timeoutId = setTimeout(() => {
+                connection.write("$-1\r\n");
+                let queue = streamWaitList.get(currentKey);
+                if (Array.isArray(queue) && queue.length > 0) {
+                  queue = queue.filter((it) => it !== clientAddress);
+                  streamWaitList.set(listKey, queue);
+                }
+              }, blockingTime * 1000);
+            }
+
+            const previousQueue = streamWaitList.get(currentKey) || [];
+            streamWaitList.set(currentKey, [...previousQueue, clientAddress]);
+            streamEmitter.once(clientAddress, (streamKey) => {
+              const responseArr = [];
+              const result = map.get(currentKey);
+              const arrForCurrentKey = [];
+              arrForCurrentKey.push(currentKey);
+              const resultForCurrentKey = [];
+              if (result) {
+                for (let i = 0; i < result.length; i++) {
+                  const it = result[i];
+                  const { ms, seq, kv } = it;
+                  console.log("comparison", ms, currentMs);
+                  if (greater(ms, seq, currentMs, currentSeq)) {
+                    someDataReturned = true;
+                    console.log("inside");
+                    const localArr = [];
+                    localArr.push(String(ms) + "-" + String(seq));
+                    const kvArray = [];
+                    kv.forEach((it) => {
+                      kvArray.push(it.key);
+                      kvArray.push(it.value);
+                    });
+                    localArr.push(kvArray);
+                    resultForCurrentKey.push(localArr);
+                  }
+                }
+                arrForCurrentKey.push(resultForCurrentKey);
+                responseArr.push(arrForCurrentKey);
+              }
+              connection.write(arrayToRespString(responseArr));
+            });
+          });
+        }
       }
     }
   });
