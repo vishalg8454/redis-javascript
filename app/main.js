@@ -375,7 +375,9 @@ const server = net.createServer((connection) => {
             responseArr.push(arrForCurrentKey);
           }
         });
-        connection.write(arrayToRespString(responseArr));
+        if (someDataReturned) {
+          connection.write(arrayToRespString(responseArr));
+        }
         if (!someDataReturned && isBlockingMode) {
           const clientAddress = `${connection.remoteAddress}:${connection.remotePort}`;
           arrOfKeyAndIds.forEach((it) => {
