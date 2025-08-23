@@ -5,26 +5,24 @@ const {
   stringToBulkString,
   numberToRespInteger,
   nullBulkString,
-} = require("./utils");
+} = require("./conversionUtils");
 
 const EventEmitter = require("events");
-const emitter = new EventEmitter();
+const { greater, between } = require("./utils");
+const listEmitter = new EventEmitter();
 const streamEmitter = new EventEmitter();
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-console.log("Logs from your program will appear here!");
+const store = new Map();
 
-const map = new Map();
-
-const waitList = new Map();
+const listWaitlist = new Map();
 const streamWaitList = new Map();
 
-const checkWaitlist = (listKey) => {
-  const queue = waitList.get(listKey);
+const checkListWaitlist = (listKey) => {
+  const queue = listWaitlist.get(listKey);
   if (Array.isArray(queue) && queue.length > 0) {
     const front = queue.shift();
-    waitList.set(listKey, queue);
-    emitter.emit(front, listKey);
+    listWaitlist.set(listKey, queue);
+    listEmitter.emit(front, listKey);
   }
 };
 
@@ -35,20 +33,6 @@ const checkStreamWaitlist = (streamKey) => {
     streamWaitList.set(streamKey, queue);
     streamEmitter.emit(front, streamKey);
   }
-};
-
-const between = (ms, seq, startMs, startSeq, endMs, endSeq) => {
-  return ms >= startMs && ms <= endMs && seq >= startSeq && seq <= endSeq;
-};
-
-const greater = (ms, seq, argMs, argSeq) => {
-  if (ms < argMs) {
-    return false;
-  }
-  if (ms === argMs) {
-    return seq > argSeq;
-  }
-  return true;
 };
 
 const server = net.createServer((connection) => {
@@ -65,7 +49,7 @@ const server = net.createServer((connection) => {
       }
       if (arr[i].toLocaleUpperCase() === "GET") {
         const key = arr[i + 1];
-        const result = map.get(key);
+        const result = store.get(key);
         const value = result.value;
         const expiryTime = result.expiry;
         const expired = Date.now() > expiryTime;
@@ -79,7 +63,7 @@ const server = net.createServer((connection) => {
         const value = arr[i + 2];
         const expiryPresent = arr[i + 3]?.toLocaleUpperCase() === "PX";
         const expiryTime = Number(arr[i + 4]);
-        map.set(key, {
+        store.set(key, {
           value,
           expiry: expiryPresent ? Date.now() + expiryTime : Infinity,
         });
@@ -90,9 +74,9 @@ const server = net.createServer((connection) => {
         const isLeftPush = arr[i] === "LPUSH";
         const listKey = arr[i + 1];
         const newListElements = arr.slice(i + 2);
-        const arrayExists = map.get(listKey);
-        const existingValue = map.get(listKey)?.value;
-        map.set(listKey, {
+        const arrayExists = store.get(listKey);
+        const existingValue = store.get(listKey)?.value;
+        store.set(listKey, {
           value: arrayExists
             ? isLeftPush
               ? [...newListElements.reverse(), ...existingValue]
@@ -100,49 +84,49 @@ const server = net.createServer((connection) => {
             : [...newListElements],
           expiry: Infinity,
         });
-        connection.write(numberToRespInteger(map.get(listKey).value.length));
-        checkWaitlist(listKey);
+        connection.write(numberToRespInteger(store.get(listKey).value.length));
+        checkListWaitlist(listKey);
       }
       if (arr[i].toLocaleUpperCase() === "LRANGE") {
         const listKey = arr[i + 1];
         let startIndex = Number(arr[i + 2]);
         let endIndex = Number(arr[i + 3]);
-        const arrayExists = map.get(listKey);
+        const arrayExists = store.get(listKey);
         if (!arrayExists) {
           connection.write(arrayToRespString([]));
         }
-        const arrLength = map.get(listKey).value.length;
+        const arrLength = store.get(listKey).value.length;
         startIndex = startIndex < 0 ? arrLength + startIndex : startIndex;
         endIndex = endIndex < 0 ? arrLength + endIndex : endIndex;
         startIndex = startIndex < 0 ? 0 : startIndex;
         endIndex = endIndex < 0 ? 0 : endIndex;
-        const arrayElements = map
+        const arrayElements = store
           .get(listKey)
           .value.slice(startIndex, endIndex + 1);
         connection.write(arrayToRespString(arrayElements));
       }
       if (arr[i].toLocaleUpperCase() === "LLEN") {
         const listKey = arr[i + 1];
-        const arrayExists = map.get(listKey);
+        const arrayExists = store.get(listKey);
         if (!arrayExists) {
           connection.write(numberToRespInteger(0));
         }
-        const arrLength = map.get(listKey).value.length;
+        const arrLength = store.get(listKey).value.length;
         connection.write(numberToRespInteger(arrLength));
       }
       if (arr[i].toLocaleUpperCase() === "LPOP") {
         const listKey = arr[i + 1];
         const countToRemove = Number(arr[i + 2]) || 1;
-        const arrayExists = map.get(listKey);
+        const arrayExists = store.get(listKey);
         if (!arrayExists) {
           connection.write(nullBulkString);
         }
-        const existingArray = map.get(listKey).value;
+        const existingArray = store.get(listKey).value;
         if (!existingArray.length) {
           connection.write(nullBulkString);
         }
         const elementsToBeRemoved = existingArray.slice(0, countToRemove);
-        map.set(listKey, {
+        store.set(listKey, {
           value: existingArray.slice(countToRemove),
           expiry: Infinity,
         });
@@ -165,30 +149,30 @@ const server = net.createServer((connection) => {
         if (timeout !== 0) {
           timeoutId = setTimeout(() => {
             connection.write(nullBulkString);
-            let queue = waitList.get(listKey);
+            let queue = listWaitlist.get(listKey);
             if (Array.isArray(queue) && queue.length > 0) {
               queue = queue.filter((it) => it !== clientAddress);
-              waitList.set(listKey, queue);
+              listWaitlist.set(listKey, queue);
             }
           }, timeout * 1000);
         }
 
-        const existingArray = map.get(listKey)?.value || [];
+        const existingArray = store.get(listKey)?.value || [];
         if (existingArray.length > 0) {
           //we have an element ready
           const elementToBeRemoved = existingArray[0];
-          map.set(listKey, {
+          store.set(listKey, {
             value: existingArray.slice(1),
             expiry: Infinity,
           });
           connection.write(stringToBulkString(elementToBeRemoved));
         }
-        const previousQueue = waitList.get(listKey) || [];
-        waitList.set(listKey, [...previousQueue, clientAddress]);
-        emitter.once(clientAddress, (listKey) => {
-          const existingArray = map.get(listKey).value;
+        const previousQueue = listWaitlist.get(listKey) || [];
+        listWaitlist.set(listKey, [...previousQueue, clientAddress]);
+        listEmitter.once(clientAddress, (listKey) => {
+          const existingArray = store.get(listKey).value;
           const elementToBeRemoved = existingArray[0];
-          map.set(listKey, {
+          store.set(listKey, {
             value: existingArray.slice(1),
             expiry: Infinity,
           });
@@ -200,7 +184,7 @@ const server = net.createServer((connection) => {
       }
       if (arr[i].toLocaleUpperCase() === "TYPE") {
         const itemKey = arr[i + 1];
-        const result = map.get(itemKey);
+        const result = store.get(itemKey);
         const value = result?.value;
         if (Array.isArray(result)) {
           connection.write("+stream\r\n");
@@ -218,7 +202,7 @@ const server = net.createServer((connection) => {
       if (arr[i].toLocaleUpperCase() === "XADD") {
         const itemKey = arr[i + 1];
         const id = arr[i + 2];
-        const result = map.get(itemKey);
+        const result = store.get(itemKey);
         let actualId = "";
         //id can be * | <ms>-* | <ms>-<seq>
         if (id === "*") {
@@ -286,7 +270,7 @@ const server = net.createServer((connection) => {
         const ms = Number(actualId.split("-")[0]);
         const seq = Number(actualId.split("-")[1]);
         arrayOfNewItems.push({ ms, seq, kv: arrForReceivedItems });
-        map.set(itemKey, arrayOfNewItems);
+        store.set(itemKey, arrayOfNewItems);
         connection.write(stringToBulkString(actualId));
         checkStreamWaitlist(itemKey);
       }
@@ -298,7 +282,7 @@ const server = net.createServer((connection) => {
         const endMs = endId === "+" ? Infinity : Number(endId.split("-")[0]);
         const endSeq =
           endId === "+" ? Infinity : Number(endId.split("-")[1]) ?? 0;
-        const result = map.get(itemKey);
+        const result = store.get(itemKey);
         let responseArr = [];
         if (result) {
           for (let i = 0; i < result.length; i++) {
@@ -342,7 +326,7 @@ const server = net.createServer((connection) => {
           const arrForCurrentKey = [];
           arrForCurrentKey.push(currentKey);
           const resultForCurrentKey = [];
-          const result = map.get(currentKey);
+          const result = store.get(currentKey);
           if (result) {
             for (let i = 0; i < result.length; i++) {
               const it = result[i];
@@ -392,7 +376,7 @@ const server = net.createServer((connection) => {
             streamWaitList.set(currentKey, [...previousQueue, clientAddress]);
             streamEmitter.once(clientAddress, (streamKey) => {
               const responseArr = [];
-              const result = map.get(currentKey);
+              const result = store.get(currentKey);
               const arrForCurrentKey = [];
               arrForCurrentKey.push(currentKey);
               const resultForCurrentKey = [];

@@ -1,29 +1,18 @@
-const stringToBulkString = (str) => {
-  return `$${str.length}\r\n${str}\r\n`;
+const between = (ms, seq, startMs, startSeq, endMs, endSeq) => {
+  return ms >= startMs && ms <= endMs && seq >= startSeq && seq <= endSeq;
 };
 
-const arrayToRespString = (arr) => {
-  let str = "";
-  str += `*${arr.length}\r\n`;
-  arr.forEach((it) => {
-    if (typeof it === "string") {
-      str += stringToBulkString(it);
-    } else if (Array.isArray(it)) {
-      str += arrayToRespString(it);
-    }
-  });
-  return str;
+const greater = (ms, seq, argMs, argSeq) => {
+  if (ms < argMs) {
+    return false;
+  }
+  if (ms === argMs) {
+    return seq > argSeq;
+  }
+  return true;
 };
-
-const numberToRespInteger = (num) => {
-  return `:${num}\r\n`;
-};
-
-const nullBulkString = "$-1\r\n";
 
 module.exports = {
-  stringToBulkString,
-  arrayToRespString,
-  nullBulkString,
-  numberToRespInteger,
+  between,
+  greater,
 };
