@@ -5,6 +5,7 @@ const {
   stringToBulkString,
   numberToRespInteger,
   nullBulkString,
+  stringToSimpleString,
 } = require("./conversionUtils");
 
 const EventEmitter = require("events");
@@ -41,10 +42,10 @@ const server = net.createServer((connection) => {
     const arr = rParser(str);
     for (let i = 0; i < arr.length; i++) {
       if (arr[i].toLocaleUpperCase() === "PING") {
-        connection.write("+PONG\r\n");
+        connection.write(stringToSimpleString("PONG"));
       }
       if (arr[i].toLocaleUpperCase() === "ECHO") {
-        const echoString = `+${arr[i + 1]}\r\n`;
+        const echoString = stringToSimpleString(arr[i + 1]);
         connection.write(echoString);
       }
       if (arr[i].toLocaleUpperCase() === "GET") {
@@ -68,66 +69,66 @@ const server = net.createServer((connection) => {
           expiry: expiryPresent ? Date.now() + expiryTime : Infinity,
         });
 
-        connection.write("+OK\r\n");
+        connection.write(stringToSimpleString("OK"));
       }
       if (["RPUSH", "LPUSH"].includes(arr[i].toLocaleUpperCase())) {
         const isLeftPush = arr[i] === "LPUSH";
         const listKey = arr[i + 1];
         const newListElements = arr.slice(i + 2);
-        const arrayExists = store.get(listKey);
+        const listExists = store.get(listKey);
         const existingValue = store.get(listKey)?.value;
         store.set(listKey, {
-          value: arrayExists
+          value: listExists
             ? isLeftPush
               ? [...newListElements.reverse(), ...existingValue]
               : [...existingValue, ...newListElements]
             : [...newListElements],
           expiry: Infinity,
         });
-        connection.write(numberToRespInteger(store.get(listKey).value.length));
+        const updatedListLength = store.get(listKey).value.length;
+        connection.write(numberToRespInteger(updatedListLength));
         checkListWaitlist(listKey);
       }
       if (arr[i].toLocaleUpperCase() === "LRANGE") {
         const listKey = arr[i + 1];
         let startIndex = Number(arr[i + 2]);
         let endIndex = Number(arr[i + 3]);
-        const arrayExists = store.get(listKey);
-        if (!arrayExists) {
+        const listExists = store.get(listKey);
+        if (!listExists) {
           connection.write(arrayToRespString([]));
         }
-        const arrLength = store.get(listKey).value.length;
-        startIndex = startIndex < 0 ? arrLength + startIndex : startIndex;
-        endIndex = endIndex < 0 ? arrLength + endIndex : endIndex;
+        const list = store.get(listKey).value;
+        const listLength = list.length;
+        startIndex = startIndex < 0 ? listLength + startIndex : startIndex;
+        endIndex = endIndex < 0 ? listLength + endIndex : endIndex;
         startIndex = startIndex < 0 ? 0 : startIndex;
         endIndex = endIndex < 0 ? 0 : endIndex;
-        const arrayElements = store
-          .get(listKey)
-          .value.slice(startIndex, endIndex + 1);
-        connection.write(arrayToRespString(arrayElements));
+        const result = list.slice(startIndex, endIndex + 1);
+        connection.write(arrayToRespString(result));
       }
       if (arr[i].toLocaleUpperCase() === "LLEN") {
         const listKey = arr[i + 1];
-        const arrayExists = store.get(listKey);
-        if (!arrayExists) {
+        const listExists = store.get(listKey);
+        if (!listExists) {
           connection.write(numberToRespInteger(0));
         }
-        const arrLength = store.get(listKey).value.length;
-        connection.write(numberToRespInteger(arrLength));
+        const listLength = store.get(listKey).value.length;
+        connection.write(numberToRespInteger(listLength));
       }
       if (arr[i].toLocaleUpperCase() === "LPOP") {
         const listKey = arr[i + 1];
         const countToRemove = Number(arr[i + 2]) || 1;
-        const arrayExists = store.get(listKey);
-        if (!arrayExists) {
+        const listExists = store.get(listKey);
+        if (!listExists) {
           connection.write(nullBulkString);
         }
-        const existingArray = store.get(listKey).value;
-        if (!existingArray.length) {
+        const existingList = store.get(listKey).value;
+        if (!existingList.length) {
           connection.write(nullBulkString);
         }
-        const elementsToBeRemoved = existingArray.slice(0, countToRemove);
+        const elementsToBeRemoved = existingList.slice(0, countToRemove);
         store.set(listKey, {
-          value: existingArray.slice(countToRemove),
+          value: existingList.slice(countToRemove),
           expiry: Infinity,
         });
         let responseString;

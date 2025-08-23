@@ -2,6 +2,10 @@ const stringToBulkString = (str) => {
   return `$${str.length}\r\n${str}\r\n`;
 };
 
+const stringToSimpleString = (str) => {
+  return `+${str}\r\n`;
+};
+
 const arrayToRespString = (arr) => {
   let str = "";
   str += `*${arr.length}\r\n`;
@@ -26,4 +30,5 @@ module.exports = {
   arrayToRespString,
   nullBulkString,
   numberToRespInteger,
+  stringToSimpleString,
 };
