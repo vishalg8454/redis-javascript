@@ -119,8 +119,7 @@ const server = net.createServer((connection) => {
         const arrayElements = map
           .get(listKey)
           .value.slice(startIndex, endIndex + 1);
-        let responseString = arrayToRespString(arrayElements);
-        connection.write(responseString);
+        connection.write(arrayToRespString(arrayElements));
       }
       if (arr[i].toLocaleUpperCase() === "LLEN") {
         const listKey = arr[i + 1];
@@ -129,8 +128,7 @@ const server = net.createServer((connection) => {
           connection.write(numberToRespInteger(0));
         }
         const arrLength = map.get(listKey).value.length;
-        let responseString = `:${arrLength}\r\n`;
-        connection.write(responseString);
+        connection.write(numberToRespInteger(arrLength));
       }
       if (arr[i].toLocaleUpperCase() === "LPOP") {
         const listKey = arr[i + 1];
@@ -148,16 +146,13 @@ const server = net.createServer((connection) => {
           value: existingArray.slice(countToRemove),
           expiry: Infinity,
         });
-        let responseString = "";
+        let responseString;
         if (countToRemove === 1) {
           //return string
-          responseString += `$${elementsToBeRemoved[0].length}\r\n${elementsToBeRemoved[0]}\r\n`;
+          responseString = stringToBulkString(elementsToBeRemoved[0]);
         } else {
           //return array
-          responseString += `*${elementsToBeRemoved.length}\r\n`;
-          elementsToBeRemoved.forEach((element) => {
-            responseString += `$${element.length}\r\n${element}\r\n`;
-          });
+          responseString = arrayToRespString(elementsToBeRemoved);
         }
         connection.write(responseString);
       }
@@ -186,9 +181,7 @@ const server = net.createServer((connection) => {
             value: existingArray.slice(1),
             expiry: Infinity,
           });
-          connection.write(
-            `$${elementToBeRemoved.length}\r\n${elementToBeRemoved}\r\n`
-          );
+          connection.write(stringToBulkString(elementToBeRemoved));
         }
         const previousQueue = waitList.get(listKey) || [];
         waitList.set(listKey, [...previousQueue, clientAddress]);
@@ -294,7 +287,7 @@ const server = net.createServer((connection) => {
         const seq = Number(actualId.split("-")[1]);
         arrayOfNewItems.push({ ms, seq, kv: arrForReceivedItems });
         map.set(itemKey, arrayOfNewItems);
-        connection.write(`$${actualId.length}\r\n${actualId}\r\n`);
+        connection.write(stringToBulkString(actualId));
         checkStreamWaitlist(itemKey);
       }
       if (arr[i].toLocaleUpperCase() === "XRANGE") {
