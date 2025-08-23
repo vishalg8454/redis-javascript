@@ -15,19 +15,19 @@ const streamEmitter = new EventEmitter();
 
 const store = new Map();
 
-const listWaitlist = new Map();
+const listWaitList = new Map();
 const streamWaitList = new Map();
 
-const checkListWaitlist = (listKey) => {
-  const queue = listWaitlist.get(listKey);
+const checkListWaitList = (listKey) => {
+  const queue = listWaitList.get(listKey);
   if (Array.isArray(queue) && queue.length > 0) {
     const front = queue.shift();
-    listWaitlist.set(listKey, queue);
+    listWaitList.set(listKey, queue);
     listEmitter.emit(front, listKey);
   }
 };
 
-const checkStreamWaitlist = (streamKey) => {
+const checkStreamWaitList = (streamKey) => {
   const queue = streamWaitList.get(streamKey);
   if (Array.isArray(queue) && queue.length > 0) {
     const front = queue.shift();
@@ -87,7 +87,7 @@ const server = net.createServer((connection) => {
         });
         const updatedListLength = store.get(listKey).value.length;
         connection.write(numberToRespInteger(updatedListLength));
-        checkListWaitlist(listKey);
+        checkListWaitList(listKey);
       }
       if (arr[i].toLocaleUpperCase() === "LRANGE") {
         const listKey = arr[i + 1];
@@ -148,34 +148,36 @@ const server = net.createServer((connection) => {
         let timeoutId;
 
         if (timeout !== 0) {
+          //if timeout is not infinite then we now need to return null, because if list contained element by now then emitter would have fired
+          //and this timeout cancelled.
           timeoutId = setTimeout(() => {
             connection.write(nullBulkString);
-            let queue = listWaitlist.get(listKey);
+            let queue = listWaitList.get(listKey);
             if (Array.isArray(queue) && queue.length > 0) {
               queue = queue.filter((it) => it !== clientAddress);
-              listWaitlist.set(listKey, queue);
+              listWaitList.set(listKey, queue);
             }
           }, timeout * 1000);
         }
 
-        const existingArray = store.get(listKey)?.value || [];
-        if (existingArray.length > 0) {
+        const list = store.get(listKey)?.value || [];
+        if (list.length > 0) {
           //we have an element ready
-          const elementToBeRemoved = existingArray[0];
+          const elementToBeRemoved = list[0];
           store.set(listKey, {
-            value: existingArray.slice(1),
+            value: list.slice(1),
             expiry: Infinity,
           });
           const responseArray = [listKey, elementToBeRemoved];
           connection.write(arrayToRespString(responseArray));
         }
-        const previousQueue = listWaitlist.get(listKey) || [];
-        listWaitlist.set(listKey, [...previousQueue, clientAddress]);
+        const previousQueue = listWaitList.get(listKey) || [];
+        listWaitList.set(listKey, [...previousQueue, clientAddress]);
         listEmitter.once(clientAddress, (listKey) => {
-          const existingArray = store.get(listKey).value;
-          const elementToBeRemoved = existingArray[0];
+          const list = store.get(listKey).value;
+          const elementToBeRemoved = list[0];
           store.set(listKey, {
-            value: existingArray.slice(1),
+            value: list.slice(1),
             expiry: Infinity,
           });
           const responseArray = [listKey, elementToBeRemoved];
@@ -273,7 +275,7 @@ const server = net.createServer((connection) => {
         arrayOfNewItems.push({ ms, seq, kv: arrForReceivedItems });
         store.set(itemKey, arrayOfNewItems);
         connection.write(stringToBulkString(actualId));
-        checkStreamWaitlist(itemKey);
+        checkStreamWaitList(itemKey);
       }
       if (arr[i].toLocaleUpperCase() === "XRANGE") {
         const [itemKey, startId, endId] = arr.slice(i + 1, i + 4);
