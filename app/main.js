@@ -165,7 +165,8 @@ const server = net.createServer((connection) => {
             value: existingArray.slice(1),
             expiry: Infinity,
           });
-          connection.write(stringToBulkString(elementToBeRemoved));
+          const responseArray = [listKey, elementToBeRemoved];
+          connection.write(arrayToRespString(responseArray));
         }
         const previousQueue = listWaitlist.get(listKey) || [];
         listWaitlist.set(listKey, [...previousQueue, clientAddress]);
@@ -177,8 +178,7 @@ const server = net.createServer((connection) => {
             expiry: Infinity,
           });
           const responseArray = [listKey, elementToBeRemoved];
-          let responseString = arrayToRespString(responseArray);
-          connection.write(responseString);
+          connection.write(arrayToRespString(responseArray));
           clearTimeout(timeoutId);
         });
       }
@@ -412,4 +412,4 @@ const server = net.createServer((connection) => {
 
 server.listen(6379, "127.0.0.1");
 
-console.log()
+console.log();
