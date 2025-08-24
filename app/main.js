@@ -13,7 +13,7 @@ const { greater, between } = require("./utils");
 const { pingHandler, echoHandler } = require("./commands/misc");
 const { getHandler, setHandler } = require("./commands/string");
 const { store } = require("./store");
-const { lRangeHandler, lPopHandler } = require("./commands/list");
+const { lRangeHandler, lPopHandler, pushHandler } = require("./commands/list");
 const listEmitter = new EventEmitter();
 const streamEmitter = new EventEmitter();
 
