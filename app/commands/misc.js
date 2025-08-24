@@ -1,4 +1,5 @@
 const { stringToSimpleString } = require("../conversionUtils");
+const { store } = require("../store");
 
 const pingHandler = (connection) => {
   connection.write(stringToSimpleString("PONG"));
