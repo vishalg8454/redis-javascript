@@ -41,15 +41,17 @@ const server = net.createServer((connection) => {
     const str = data.toString();
     const arr = rParser(str);
     for (let i = 0; i < arr.length; i++) {
-      if (arr[i].toLocaleUpperCase() === "PING") {
+      const commandName = arr[i].toLocaleUpperCase();
+      if (commandName === "PING") {
         connection.write(stringToSimpleString("PONG"));
       }
-      if (arr[i].toLocaleUpperCase() === "ECHO") {
+      if (commandName === "ECHO") {
         const echoString = stringToSimpleString(arr[i + 1]);
         connection.write(echoString);
       }
-      if (arr[i].toLocaleUpperCase() === "GET") {
+      if (commandName === "GET") {
         const key = arr[i + 1];
+
         const result = store.get(key);
         const value = result.value;
         const expiryTime = result.expiry;
@@ -59,11 +61,12 @@ const server = net.createServer((connection) => {
           : stringToBulkString(value);
         connection.write(resultString);
       }
-      if (arr[i].toLocaleUpperCase() === "SET") {
+      if (commandName === "SET") {
         const key = arr[i + 1];
         const value = arr[i + 2];
         const expiryPresent = arr[i + 3]?.toLocaleUpperCase() === "PX";
         const expiryTime = Number(arr[i + 4]);
+
         store.set(key, {
           value,
           expiry: expiryPresent ? Date.now() + expiryTime : Infinity,
@@ -71,10 +74,11 @@ const server = net.createServer((connection) => {
 
         connection.write(stringToSimpleString("OK"));
       }
-      if (["RPUSH", "LPUSH"].includes(arr[i].toLocaleUpperCase())) {
-        const isLeftPush = arr[i] === "LPUSH";
+      if (["RPUSH", "LPUSH"].includes(commandName)) {
+        const isLeftPush = commandName === "LPUSH";
         const listKey = arr[i + 1];
         const newListElements = arr.slice(i + 2);
+
         const listExists = store.get(listKey);
         const existingValue = store.get(listKey)?.value;
         store.set(listKey, {
@@ -89,10 +93,11 @@ const server = net.createServer((connection) => {
         connection.write(numberToRespInteger(updatedListLength));
         checkListWaitList(listKey);
       }
-      if (arr[i].toLocaleUpperCase() === "LRANGE") {
+      if (commandName === "LRANGE") {
         const listKey = arr[i + 1];
         let startIndex = Number(arr[i + 2]);
         let endIndex = Number(arr[i + 3]);
+
         const listExists = store.get(listKey);
         if (!listExists) {
           connection.write(arrayToRespString([]));
@@ -106,8 +111,9 @@ const server = net.createServer((connection) => {
         const result = list.slice(startIndex, endIndex + 1);
         connection.write(arrayToRespString(result));
       }
-      if (arr[i].toLocaleUpperCase() === "LLEN") {
+      if (commandName === "LLEN") {
         const listKey = arr[i + 1];
+
         const listExists = store.get(listKey);
         if (!listExists) {
           connection.write(numberToRespInteger(0));
@@ -115,9 +121,10 @@ const server = net.createServer((connection) => {
         const listLength = store.get(listKey).value.length;
         connection.write(numberToRespInteger(listLength));
       }
-      if (arr[i].toLocaleUpperCase() === "LPOP") {
+      if (commandName === "LPOP") {
         const listKey = arr[i + 1];
         const countToRemove = Number(arr[i + 2]) || 1;
+
         const listExists = store.get(listKey);
         if (!listExists) {
           connection.write(nullBulkString);
@@ -141,12 +148,12 @@ const server = net.createServer((connection) => {
         }
         connection.write(responseString);
       }
-      if (arr[i].toLocaleUpperCase() === "BLPOP") {
+      if (commandName === "BLPOP") {
         const clientAddress = `${connection.remoteAddress}:${connection.remotePort}`;
         const listKey = arr[i + 1];
         const timeout = Number(arr[i + 2]);
-        let timeoutId;
 
+        let timeoutId;
         if (timeout !== 0) {
           //if timeout is not infinite then we now need to return null, because if list contained element by now then emitter would have fired
           //and this timeout cancelled.
@@ -185,8 +192,9 @@ const server = net.createServer((connection) => {
           clearTimeout(timeoutId);
         });
       }
-      if (arr[i].toLocaleUpperCase() === "TYPE") {
+      if (commandName === "TYPE") {
         const itemKey = arr[i + 1];
+
         const result = store.get(itemKey);
         const value = result?.value;
         if (Array.isArray(result)) {
@@ -202,9 +210,10 @@ const server = net.createServer((connection) => {
           connection.write(stringToSimpleString("string"));
         }
       }
-      if (arr[i].toLocaleUpperCase() === "XADD") {
+      if (commandName === "XADD") {
         const itemKey = arr[i + 1];
         const receivedId = arr[i + 2];
+
         const result = store.get(itemKey);
         let actualId = "";
         //id can be * | <ms>-* | <ms>-<seq>
@@ -277,8 +286,9 @@ const server = net.createServer((connection) => {
         connection.write(stringToBulkString(actualId));
         checkStreamWaitList(itemKey);
       }
-      if (arr[i].toLocaleUpperCase() === "XRANGE") {
+      if (commandName === "XRANGE") {
         const [itemKey, startId, endId] = arr.slice(i + 1, i + 4);
+
         const startMs = startId === "-" ? 0 : Number(startId.split("-")[0]);
         const startSeq =
           startId === "-" ? 0 : Number(startId.split("-")[1]) ?? 0;
@@ -309,9 +319,10 @@ const server = net.createServer((connection) => {
         }
         connection.write(arrayToRespString(responseArr));
       }
-      if (arr[i].toLocaleUpperCase() === "XREAD") {
+      if (commandName === "XREAD") {
         const isBlockingMode = arr[i + 1].toLocaleUpperCase() === "BLOCK";
         const blockingTime = isBlockingMode ? Number(arr[i + 2]) : null;
+
         const keyAndIdArgs = arr.splice(isBlockingMode ? 4 : 2);
         const arrOfKeyAndIds = [];
         for (let i = 0; i < keyAndIdArgs.length / 2; i++) {
@@ -371,8 +382,6 @@ const server = net.createServer((connection) => {
               currentId === "$" ? lastMs : Number(currentId.split("-")[0]);
             const currentSeq =
               currentId === "$" ? lastSeq : Number(currentId.split("-")[1]);
-            console.log("currentMs ", currentMs);
-            console.log("currentSeq", currentSeq);
 
             let timeoutId;
 
