@@ -1,6 +1,7 @@
 const {
   stringToBulkString,
   stringToSimpleString,
+  nullBulkString,
 } = require("../conversionUtils");
 const { store } = require("../store");
 
