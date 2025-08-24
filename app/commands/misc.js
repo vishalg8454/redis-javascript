@@ -5,7 +5,7 @@ const pingHandler = (connection) => {
 };
 
 const echoHandler = (connection, string) => {
-  const echoString = stringToSimpleString(arr[i + 1]);
+  const echoString = stringToSimpleString(string);
   connection.write(echoString);
 };
 
