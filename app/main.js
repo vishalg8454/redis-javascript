@@ -3,9 +3,7 @@ const { rParser } = require("./parser");
 const {
   arrayToRespString,
   stringToBulkString,
-  numberToRespInteger,
   nullBulkString,
-  stringToSimpleString,
 } = require("./conversionUtils");
 
 const EventEmitter = require("events");
