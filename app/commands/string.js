@@ -9,15 +9,11 @@ const getHandler = (connection, key) => {
   connection.write(resultString);
 };
 
-const setHandler = (connection, key, value) => {
-  const expiryPresent = arr[i + 3]?.toLocaleUpperCase() === "PX";
-  const expiryTime = Number(arr[i + 4]);
-
+const setHandler = (connection, key, value, expiryPresent, expiryTime) => {
   store.set(key, {
     value,
     expiry: expiryPresent ? Date.now() + expiryTime : Infinity,
   });
-
   connection.write(stringToSimpleString("OK"));
 };
 

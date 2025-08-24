@@ -57,7 +57,9 @@ const server = net.createServer((connection) => {
       if (commandName === "SET") {
         const key = arr[i + 1];
         const value = arr[i + 2];
-        setHandler(connection, key, value);
+        const expiryPresent = arr[i + 3]?.toLocaleUpperCase() === "PX";
+        const expiryTime = Number(arr[i + 4]);
+        setHandler(connection, key, value, expiryPresent, expiryTime);
       }
       if (["RPUSH", "LPUSH"].includes(commandName)) {
         const isLeftPush = commandName === "LPUSH";
