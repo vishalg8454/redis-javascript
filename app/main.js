@@ -10,7 +10,7 @@ const {
 
 const EventEmitter = require("events");
 const { greater, between } = require("./utils");
-const { pingHandler, echoHandler } = require("./commands/misc");
+const { pingHandler, echoHandler, typeHandler } = require("./commands/misc");
 const { getHandler, setHandler } = require("./commands/string");
 const { store } = require("./store");
 const {
@@ -18,12 +18,13 @@ const {
   lPopHandler,
   pushHandler,
   lLenHandler,
+  blPopHandler,
 } = require("./commands/list");
-const listEmitter = new EventEmitter();
-const streamEmitter = new EventEmitter();
+export const listEmitter = new EventEmitter();
+export const streamEmitter = new EventEmitter();
 
-const listWaitList = new Map();
-const streamWaitList = new Map();
+export const listWaitList = new Map();
+export const streamWaitList = new Map();
 
 const checkListWaitList = (listKey) => {
   const queue = listWaitList.get(listKey);
@@ -97,66 +98,15 @@ const server = net.createServer((connection) => {
         lPopHandler(connection, listKey, countToRemove);
       }
       if (commandName === "BLPOP") {
-        const clientAddress = `${connection.remoteAddress}:${connection.remotePort}`;
         const listKey = arr[i + 1];
         const timeout = Number(arr[i + 2]);
 
-        let timeoutId;
-        if (timeout !== 0) {
-          //if timeout is not infinite then we now need to return null, because if list contained element by now then emitter would have fired
-          //and this timeout cancelled.
-          timeoutId = setTimeout(() => {
-            connection.write(nullBulkString);
-            let queue = listWaitList.get(listKey);
-            if (Array.isArray(queue) && queue.length > 0) {
-              queue = queue.filter((it) => it !== clientAddress);
-              listWaitList.set(listKey, queue);
-            }
-          }, timeout * 1000);
-        }
-
-        const list = store.get(listKey)?.value || [];
-        if (list.length > 0) {
-          //we have an element ready
-          const elementToBeRemoved = list[0];
-          store.set(listKey, {
-            value: list.slice(1),
-            expiry: Infinity,
-          });
-          const responseArray = [listKey, elementToBeRemoved];
-          connection.write(arrayToRespString(responseArray));
-        }
-        const previousQueue = listWaitList.get(listKey) || [];
-        listWaitList.set(listKey, [...previousQueue, clientAddress]);
-        listEmitter.once(clientAddress, (listKey) => {
-          const list = store.get(listKey).value;
-          const elementToBeRemoved = list[0];
-          store.set(listKey, {
-            value: list.slice(1),
-            expiry: Infinity,
-          });
-          const responseArray = [listKey, elementToBeRemoved];
-          connection.write(arrayToRespString(responseArray));
-          clearTimeout(timeoutId);
-        });
+        blPopHandler(connection, listKey, timeout);
       }
       if (commandName === "TYPE") {
         const itemKey = arr[i + 1];
 
-        const result = store.get(itemKey);
-        const value = result?.value;
-        if (Array.isArray(result)) {
-          connection.write(stringToSimpleString("stream"));
-        }
-        if (!value) {
-          connection.write(stringToSimpleString("none"));
-        }
-        if (Array.isArray(value)) {
-          connection.write(stringToSimpleString("list"));
-        }
-        if (typeof value === "string") {
-          connection.write(stringToSimpleString("string"));
-        }
+        typeHandler(connection, itemKey);
       }
       if (commandName === "XADD") {
         const itemKey = arr[i + 1];

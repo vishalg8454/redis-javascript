@@ -3,6 +3,7 @@ const {
   arrayToRespString,
   stringToBulkString,
 } = require("../conversionUtils");
+const { listWaitList, listEmitter } = require("../main");
 const { store } = require("../store");
 
 const pushHandler = (connection, isLeftPush, listKey, newListElements) => {
@@ -69,9 +70,52 @@ const lPopHandler = (connection, listKey, countToRemove) => {
   connection.write(responseString);
 };
 
+const blPopHandler = (connection, listKey, timeout) => {
+  const clientAddress = `${connection.remoteAddress}:${connection.remotePort}`;
+  let timeoutId;
+  if (timeout !== 0) {
+    //if timeout is not infinite then we now need to return null, because if list contained element by now then emitter would have fired
+    //and this timeout cancelled.
+    timeoutId = setTimeout(() => {
+      connection.write(nullBulkString);
+      let queue = listWaitList.get(listKey);
+      if (Array.isArray(queue) && queue.length > 0) {
+        queue = queue.filter((it) => it !== clientAddress);
+        listWaitList.set(listKey, queue);
+      }
+    }, timeout * 1000);
+  }
+
+  const list = store.get(listKey)?.value || [];
+  if (list.length > 0) {
+    //we have an element ready
+    const elementToBeRemoved = list[0];
+    store.set(listKey, {
+      value: list.slice(1),
+      expiry: Infinity,
+    });
+    const responseArray = [listKey, elementToBeRemoved];
+    connection.write(arrayToRespString(responseArray));
+  }
+  const previousQueue = listWaitList.get(listKey) || [];
+  listWaitList.set(listKey, [...previousQueue, clientAddress]);
+  listEmitter.once(clientAddress, (listKey) => {
+    const list = store.get(listKey).value;
+    const elementToBeRemoved = list[0];
+    store.set(listKey, {
+      value: list.slice(1),
+      expiry: Infinity,
+    });
+    const responseArray = [listKey, elementToBeRemoved];
+    connection.write(arrayToRespString(responseArray));
+    clearTimeout(timeoutId);
+  });
+};
+
 module.exports = {
   pushHandler,
   lRangeHandler,
   lLenHandler,
   lPopHandler,
+  blPopHandler,
 };
