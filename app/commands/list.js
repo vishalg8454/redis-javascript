@@ -2,6 +2,7 @@ const {
   numberToRespInteger,
   arrayToRespString,
   stringToBulkString,
+  nullBulkString,
 } = require("../conversionUtils");
 const EventEmitter = require("events");
 const { store } = require("../store");
