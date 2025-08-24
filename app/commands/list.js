@@ -1,6 +1,7 @@
 const {
   numberToRespInteger,
   arrayToRespString,
+  stringToBulkString,
 } = require("../conversionUtils");
 const { store } = require("../store");
 
