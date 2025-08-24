@@ -21,8 +21,8 @@ const {
   blPopHandler,
 } = require("./commands/list");
 
-export const streamEmitter = new EventEmitter();
-export const streamWaitList = new Map();
+const streamEmitter = new EventEmitter();
+const streamWaitList = new Map();
 
 const checkStreamWaitList = (streamKey) => {
   const queue = streamWaitList.get(streamKey);
