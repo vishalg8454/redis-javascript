@@ -10,10 +10,11 @@ const {
 
 const EventEmitter = require("events");
 const { greater, between } = require("./utils");
+const { pingHandler, echoHandler } = require("./commands/misc");
+const { getHandler, setHandler } = require("./commands/string");
+const { store } = require("./store");
 const listEmitter = new EventEmitter();
 const streamEmitter = new EventEmitter();
-
-const store = new Map();
 
 const listWaitList = new Map();
 const streamWaitList = new Map();
@@ -43,36 +44,20 @@ const server = net.createServer((connection) => {
     for (let i = 0; i < arr.length; i++) {
       const commandName = arr[i].toLocaleUpperCase();
       if (commandName === "PING") {
-        connection.write(stringToSimpleString("PONG"));
+        pingHandler(connection);
       }
       if (commandName === "ECHO") {
-        const echoString = stringToSimpleString(arr[i + 1]);
-        connection.write(echoString);
+        const echoString = arr[i + 1];
+        echoHandler(connection, echoString);
       }
       if (commandName === "GET") {
         const key = arr[i + 1];
-
-        const result = store.get(key);
-        const value = result.value;
-        const expiryTime = result.expiry;
-        const expired = Date.now() > expiryTime;
-        const resultString = expired
-          ? nullBulkString
-          : stringToBulkString(value);
-        connection.write(resultString);
+        getHandler(connection, key);
       }
       if (commandName === "SET") {
         const key = arr[i + 1];
         const value = arr[i + 2];
-        const expiryPresent = arr[i + 3]?.toLocaleUpperCase() === "PX";
-        const expiryTime = Number(arr[i + 4]);
-
-        store.set(key, {
-          value,
-          expiry: expiryPresent ? Date.now() + expiryTime : Infinity,
-        });
-
-        connection.write(stringToSimpleString("OK"));
+        setHandler(connection, key, value);
       }
       if (["RPUSH", "LPUSH"].includes(commandName)) {
         const isLeftPush = commandName === "LPUSH";
