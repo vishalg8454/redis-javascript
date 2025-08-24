@@ -1,4 +1,8 @@
-const { stringToBulkString, arrayToRespString } = require("../conversionUtils");
+const {
+  stringToBulkString,
+  arrayToRespString,
+  nullBulkString,
+} = require("../conversionUtils");
 const EventEmitter = require("events");
 const { store } = require("../store");
 const { greater, between } = require("../utils");
