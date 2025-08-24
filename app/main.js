@@ -101,6 +101,7 @@ const server = net.createServer((connection) => {
       }
       if (commandName === "CONFIG") {
         connection.write(arrayToRespString([[]]));
+        //implement bare minimum config so that redis-benchmark does not crash
         break;
       }
     }
