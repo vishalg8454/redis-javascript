@@ -3,6 +3,7 @@ const {
   arrayToRespString,
   stringToBulkString,
 } = require("../conversionUtils");
+const EventEmitter = require("events");
 const { store } = require("../store");
 
 const listEmitter = new EventEmitter();

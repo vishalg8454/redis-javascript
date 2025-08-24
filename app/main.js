@@ -6,7 +6,6 @@ const {
   nullBulkString,
 } = require("./conversionUtils");
 
-const EventEmitter = require("events");
 const { greater, between } = require("./utils");
 const { pingHandler, echoHandler, typeHandler } = require("./commands/misc");
 const { getHandler, setHandler } = require("./commands/string");
