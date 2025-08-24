@@ -1,3 +1,7 @@
+const {
+  stringToBulkString,
+  stringToSimpleString,
+} = require("../conversionUtils");
 const { store } = require("../store");
 
 const getHandler = (connection, key) => {
