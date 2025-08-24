@@ -13,6 +13,7 @@ const { greater, between } = require("./utils");
 const { pingHandler, echoHandler } = require("./commands/misc");
 const { getHandler, setHandler } = require("./commands/string");
 const { store } = require("./store");
+const { lRangeHandler, lPopHandler } = require("./commands/list");
 const listEmitter = new EventEmitter();
 const streamEmitter = new EventEmitter();
 
@@ -48,10 +49,12 @@ const server = net.createServer((connection) => {
       }
       if (commandName === "ECHO") {
         const echoString = arr[i + 1];
+
         echoHandler(connection, echoString);
       }
       if (commandName === "GET") {
         const key = arr[i + 1];
+
         getHandler(connection, key);
       }
       if (commandName === "SET") {
@@ -59,6 +62,7 @@ const server = net.createServer((connection) => {
         const value = arr[i + 2];
         const expiryPresent = arr[i + 3]?.toLocaleUpperCase() === "PX";
         const expiryTime = Number(arr[i + 4]);
+
         setHandler(connection, key, value, expiryPresent, expiryTime);
       }
       if (["RPUSH", "LPUSH"].includes(commandName)) {
@@ -66,18 +70,7 @@ const server = net.createServer((connection) => {
         const listKey = arr[i + 1];
         const newListElements = arr.slice(i + 2);
 
-        const listExists = store.get(listKey);
-        const existingValue = store.get(listKey)?.value;
-        store.set(listKey, {
-          value: listExists
-            ? isLeftPush
-              ? [...newListElements.reverse(), ...existingValue]
-              : [...existingValue, ...newListElements]
-            : [...newListElements],
-          expiry: Infinity,
-        });
-        const updatedListLength = store.get(listKey).value.length;
-        connection.write(numberToRespInteger(updatedListLength));
+        pushHandler(connection, isLeftPush, listKey, newListElements);
         checkListWaitList(listKey);
       }
       if (commandName === "LRANGE") {
@@ -85,55 +78,18 @@ const server = net.createServer((connection) => {
         let startIndex = Number(arr[i + 2]);
         let endIndex = Number(arr[i + 3]);
 
-        const listExists = store.get(listKey);
-        if (!listExists) {
-          connection.write(arrayToRespString([]));
-        }
-        const list = store.get(listKey).value;
-        const listLength = list.length;
-        startIndex = startIndex < 0 ? listLength + startIndex : startIndex;
-        endIndex = endIndex < 0 ? listLength + endIndex : endIndex;
-        startIndex = startIndex < 0 ? 0 : startIndex;
-        endIndex = endIndex < 0 ? 0 : endIndex;
-        const result = list.slice(startIndex, endIndex + 1);
-        connection.write(arrayToRespString(result));
+        lRangeHandler(connection, listKey, startIndex, endIndex);
       }
       if (commandName === "LLEN") {
         const listKey = arr[i + 1];
 
-        const listExists = store.get(listKey);
-        if (!listExists) {
-          connection.write(numberToRespInteger(0));
-        }
-        const listLength = store.get(listKey).value.length;
-        connection.write(numberToRespInteger(listLength));
+        lLenHandler(connection, listKey);
       }
       if (commandName === "LPOP") {
         const listKey = arr[i + 1];
         const countToRemove = Number(arr[i + 2]) || 1;
 
-        const listExists = store.get(listKey);
-        if (!listExists) {
-          connection.write(nullBulkString);
-        }
-        const existingList = store.get(listKey).value;
-        if (!existingList.length) {
-          connection.write(nullBulkString);
-        }
-        const elementsToBeRemoved = existingList.slice(0, countToRemove);
-        store.set(listKey, {
-          value: existingList.slice(countToRemove),
-          expiry: Infinity,
-        });
-        let responseString;
-        if (countToRemove === 1) {
-          //return string
-          responseString = stringToBulkString(elementsToBeRemoved[0]);
-        } else {
-          //return array
-          responseString = arrayToRespString(elementsToBeRemoved);
-        }
-        connection.write(responseString);
+        lPopHandler(connection, listKey, countToRemove);
       }
       if (commandName === "BLPOP") {
         const clientAddress = `${connection.remoteAddress}:${connection.remotePort}`;
