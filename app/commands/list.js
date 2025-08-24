@@ -6,6 +6,18 @@ const {
 const { listWaitList, listEmitter } = require("../main");
 const { store } = require("../store");
 
+const listEmitter = new EventEmitter();
+const listWaitList = new Map();
+
+const checkListWaitList = (listKey) => {
+  const queue = listWaitList.get(listKey);
+  if (Array.isArray(queue) && queue.length > 0) {
+    const front = queue.shift();
+    listWaitList.set(listKey, queue);
+    listEmitter.emit(front, listKey);
+  }
+};
+
 const pushHandler = (connection, isLeftPush, listKey, newListElements) => {
   const listExists = store.get(listKey);
   const existingValue = store.get(listKey)?.value;
@@ -19,6 +31,7 @@ const pushHandler = (connection, isLeftPush, listKey, newListElements) => {
   });
   const updatedListLength = store.get(listKey).value.length;
   connection.write(numberToRespInteger(updatedListLength));
+  checkListWaitList(listKey);
 };
 
 const lRangeHandler = (connection, listKey, startIndex, endIndex) => {

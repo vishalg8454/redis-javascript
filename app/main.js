@@ -20,20 +20,9 @@ const {
   lLenHandler,
   blPopHandler,
 } = require("./commands/list");
-export const listEmitter = new EventEmitter();
+
 export const streamEmitter = new EventEmitter();
-
-export const listWaitList = new Map();
 export const streamWaitList = new Map();
-
-const checkListWaitList = (listKey) => {
-  const queue = listWaitList.get(listKey);
-  if (Array.isArray(queue) && queue.length > 0) {
-    const front = queue.shift();
-    listWaitList.set(listKey, queue);
-    listEmitter.emit(front, listKey);
-  }
-};
 
 const checkStreamWaitList = (streamKey) => {
   const queue = streamWaitList.get(streamKey);
@@ -77,7 +66,6 @@ const server = net.createServer((connection) => {
         const newListElements = arr.slice(i + 2);
 
         pushHandler(connection, isLeftPush, listKey, newListElements);
-        checkListWaitList(listKey);
       }
       if (commandName === "LRANGE") {
         const listKey = arr[i + 1];
