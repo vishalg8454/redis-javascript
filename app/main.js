@@ -15,6 +15,7 @@ const {
   xRangeHandler,
   xReadHandler,
 } = require("./commands/stream");
+const { arrayToRespString } = require("./conversionUtils");
 
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
@@ -97,6 +98,10 @@ const server = net.createServer((connection) => {
 
         const keyAndIdArgs = arr.splice(isBlockingMode ? 4 : 2);
         xReadHandler(connection, isBlockingMode, blockingTime, keyAndIdArgs);
+      }
+      if (commandName === "CONFIG") {
+        connection.write(arrayToRespString([[]]));
+        break;
       }
     }
   });
