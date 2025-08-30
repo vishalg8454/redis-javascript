@@ -108,8 +108,8 @@ const server = net.createServer((connection) => {
       if (commandName === "INCR") {
         const key = arr[i + 1];
         const result = store.get(key);
-        const value = Number(result.value);
-        const newValue = value + 1;
+        const value = result.value;
+        const newValue = Number(value) + 1;
         if (typeof value === "string") {
           store.set(key, {
             ...result,
