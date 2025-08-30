@@ -15,7 +15,8 @@ const {
   xRangeHandler,
   xReadHandler,
 } = require("./commands/stream");
-const { arrayToRespString } = require("./conversionUtils");
+const { arrayToRespString, numberToRespInteger } = require("./conversionUtils");
+const { store } = require("./store");
 
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
@@ -103,6 +104,19 @@ const server = net.createServer((connection) => {
         connection.write(arrayToRespString([[]]));
         //implement bare minimum config so that redis-benchmark does not crash
         break;
+      }
+      if (commandName === "INCR") {
+        const key = arr[i + 1];
+        const result = store.get(key);
+        const value = result.value;
+        const newValue = Number(value + 1);
+        if (typeof value === "string") {
+          store.set(key, {
+            ...result,
+            value: String(newValue),
+          });
+          connection.write(numberToRespInteger(newValue));
+        }
       }
     }
   });
